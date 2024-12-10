@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #333;
+            /*padding: 0px 0px;*/
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between; /* Spread content across the bar */
+            align-items: center; /* Center items vertically */
+        }
+        #buttons {
+            display: flex;
+            gap: 10px; /* Space between buttons */
+            margin-left: auto; /* Align buttons to the right */
+        }
+        .editor-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #input-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 300px;
+            padding: 0px;            
+            margin-top: 27px;
+        }
+        #monaco-editor {
+            flex: 1;
+            border: none;
+        }
+        #divider {
+            width: 5px;
+            background-color: #ccc;
+            cursor: ew-resize;
+        }
+        #output-container {
+            flex: 1;
+            position: relative;
+            margin-top: 1px;
+            padding: 1px;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        button {
+            padding: 5px 10px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #555;
+        }
+        #alert-container {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+        .alert-message {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: slide-down 2s ease-in-out forwards;
+        }
+        @keyframes slide-down {
+            0% {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            10% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            90% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
+</head>
+<body>
+    <div id="alert-container"></div>
+    <div class="editor-container">
+        <header id="header" class="top-bar">
+            <div id="buttons">
+                <button id="fullscreenBtn">Full Screen</button>
+                <button id="exportBtn" onclick="mkExport()">Export</button>
+                <button id="optionsBtn" class="optionsBtn" onclick="toggleOptionMenu()">Options</button>
+            </div>
+        </header>
+        <div id="input-container">
+            <div id="monaco-editor"></div>
+        </div>
+        <div id="output-container">
+            <iframe id="output"></iframe>
+            <div id="options-container" style="width: 50%; height: 100%; margin-top: 48px; display: none;">
+                <div id="options">
+                    <h4><b>Options</b></h4>
+                    <p id="option1" onclick="toggleOption(1)" v="true" style="color: green">Alerts/Popups</p>
+                    <p id="option2" onclick="toggleOption(2)" v="true" style="color: green">Show Fullscreen Button</p>
+                    <p id="option3" onclick="toggleOption(3)" v="true" style="color: green">Show Export Button</p>
+                    <p id="option4" onclick="toggleOption(4)" v="true" style="color: green">Dark Mode</p>
+                    <button onclick="font(-1)" id="dec">-</button><span id="span"> Font: 14 </span><button id="inc" onclick="font(1)">+</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        const inputContainer = document.getElementById('input-container');
+        //const divider = document.getElementById('divider');
+        const outputContainer = document.getElementById('output-container');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        
+        var fileArray = [];
+        var currentFile = document.getElementById('monaco-editor');
+        
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' } });
+
+        let editor;
+        require(['vs/editor/editor.main'], function () {
+            editor = monaco.editor.create(document.getElementById('monaco-editor'), {
+                value: '<!DOCTYPE html>\n<html>\n\n<head>\n    <title>Example</title>\n</head>\n\n<body>\n    <h1>Hello, World!</h1>\n    <p>Write some code!</p>\n</body>\n\n</html>',
+                language: 'html',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: {
+                    enabled: false
+                }
+            });
+            fileArray.push(editor); 
+        });
+
+        function updateOutput() {
+            const code = document.getElementById("monaco-editor").firstChild.firstChild.children[1].innerText;
+            if (String(code) != "") {              
+                //output.srcdoc = code;
+
+                const iframe = document.getElementById('output');
+                const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+                iframeDocument.open();
+                iframeDocument.write(code);
+                iframeDocument.close();
+
+                console.log("Updated Output.");
+
+                showAlert("updated output", 1000, false)
+            }
+        }
+
+        document.addEventListener("keydown", function (event) {
+            if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+                event.preventDefault();
+                updateOutput();
+                return false;
+            }
+        });
+
+        let debounceTimer;
+        if (editor) {
+            editor.onDidChangeModelContent(() => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(updateOutput, 300); // Adjust delay as needed
+            });
+        }
+
+        fullscreenBtn.addEventListener('click', () => {
+            const isFullscreen = inputContainer.style.display === 'none';
+            const doordont = false;
+
+            if(doordont) {return;}
+
+            if (isFullscreen) {
+                showAlert("fullscreen off")
+                inputContainer.style.display = 'flex';
+                //divider.style.display = 'block';
+                fullscreenBtn.textContent = 'Full Screen';
+                outputContainer.style.flex = '1';
+            } else {
+                showAlert("fullscreened output", 2000, false)
+                inputContainer.style.display = 'none';
+                //divider.style.display = 'none';
+                fullscreenBtn.textContent = 'Exit Full Screen';
+                outputContainer.style.flex = 'none';
+                outputContainer.style.width = '100%';
+            }
+        });
+
+        function toggleOptionMenu() {
+            options = document.getElementById("options-container");
+            if(options.style.display == "block") {
+                options.style.display = "none";
+                output.hidden = false;
+                //showAlert("showing output", 1500, true)  
+                setTimeout(function() {updateOutput()}, 750);
+                saveOptions();
+                optionsBtn.innerText = "Options";
+            } else {
+                options.style.display = "block";
+                output.hidden = true;
+                //showAlert("showing options", 1500, true)
+                optionsBtn.innerText = "Close Options";
+            }
+        }
+
+        function toggleOption(option, v=null) {
+
+            // v = value 
+            // for loading previous options, toggleOption(1, true) sets option1 to true   if no value is given it just toggles it
+
+            if(document.getElementById(`option${option}`) == null) {return;} // if option element not found dont try anything
+
+            if(v == null) {
+                // green if enabled / red if disabled
+                if(document.getElementById(`option${option}`).style.color == "green") {
+                    document.getElementById(`option${option}`).style.color = "red";   
+                    document.getElementById(`option${option}`).setAttribute("v", "");
+                } else if(document.getElementById(`option${option}`).style.color == "red"){
+                    document.getElementById(`option${option}`).style.color = "green";
+                    document.getElementById(`option${option}`).setAttribute("v", "true");
+                }
+            } else if(!(v == null)) {
+                if(v == true) {
+                    document.getElementById(`option${option}`).style.color = "green";
+                    document.getElementById(`option${option}`).setAttribute("v", "true");
+                } else if(v == false) {
+                    document.getElementById(`option${option}`).style.color = "red";   
+                    document.getElementById(`option${option}`).setAttribute("v", "");
+                }
+            }
+
+            // options toggle update ("" is false)
+
+            if(document.getElementById("option1").getAttribute("v") == "true") {
+                doAlert = true;
+            } else if(document.getElementById("option1").getAttribute("v") == ""){ 
+                doAlert = false;
+            }
+
+            if(document.getElementById("option2").getAttribute("v") == "true") {
+                fullscreenBtn.hidden = false;
+            } else if(document.getElementById("option2").getAttribute("v") == ""){
+                fullscreenBtn.hidden = true;
+            }   
+
+            if(document.getElementById("option3").getAttribute("v") == "true") {
+                exportBtn.hidden = false;
+            } else if(document.getElementById("option3").getAttribute("v") == ""){
+                exportBtn.hidden = true;
+            }
+ 
+            if(document.getElementById("option4").getAttribute("v") == "true") {
+                monaco.editor.setTheme("vs-dark");
+            } else if(document.getElementById("option4").getAttribute("v") == ""){
+                monaco.editor.setTheme("vs");
+            }
+            
+        }
+         
+        // font is apart of the settings ^^^ but seperate
+        var fontSize = 14; // default
+        
+        function font(n) {
+            if(String(n).includes("-")) {
+                var before = String(document.getElementById("span").innerText);
+                before = String(before).split(":")[1].replaceAll(" ", "");
+                if(before == 1) {
+                    document.getElementById("dec").style.color = "red";
+                    setTimeout(function() {
+                        document.getElementById("dec").style.color = "white";
+                    }, 1700);
+                    return;
+                }
+                //console.log("font is " + Number(before) + ", " + Number(before) + "-1 = " + (Number(before)-1) + "  setting font & span to: " + (Number(before)-1))
+                fontSize = (Number(before)-1);
+            } else {
+                var before = String(document.getElementById("span").innerText);
+                before = String(before).split(":")[1].replaceAll(" ", "");
+                fontSize = (Number(before)+1);
+            }
+
+            monaco.editor.getEditors()[0].updateOptions({fontSize: fontSize})
+            document.getElementById("span").innerText = ` Font: ${fontSize} `;
+        }
+
+        var doAlert = true;
+
+        function showAlert(message, s, removeOthers) {
+
+            if(!(doAlert)) {
+                return;
+            }
+
+            const container = document.getElementById("alert-container");
+            container.style.zIndex = 1001; // (+1 more than the header zIndex)
+            const alertElement = document.createElement("div");
+            alertElement.className = "alert-message";
+            alertElement.textContent = message;
+            var previousMessages = container.children;
+            var removePreviousMessages = removeOthers;
+
+            if(removePreviousMessages == true) {
+                container.innerHTML = "";
+            }
+
+            container.appendChild(alertElement);
+
+            setTimeout(() => {
+
+                alertElement.remove();
+
+            }, (s*1000));
+        }
+
+        const save = (data, filename) => {
+            const blob = new Blob([data], { type: "text/html" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+        };
+
+        function mkExport() {
+            showAlert("attempting to export", 1500, false)
+            var exportCode = document.getElementById("monaco-editor").firstChild.firstChild.children[1].innerText;
+            if(exportCode != "") {
+                save(exportCode, "output.html");
+            } else {
+                showAlert("write some code before trying to export!", 3, false);
+            }
+        }
+          
+        setTimeout(function() {updateOutput()}, 1500);
+
+        function saveOptions() {
+            try {
+                option1 = Boolean(document.getElementById("option1").getAttribute("v"));
+                option2 = Boolean(document.getElementById("option2").getAttribute("v"));
+                option3 = Boolean(document.getElementById("option3").getAttribute("v"));
+                option4 = Boolean(document.getElementById("option4").getAttribute("v"));
+
+                localStorage.setItem("option1", option1);
+                localStorage.setItem("option2", option2);
+                localStorage.setItem("option3", option3);
+                localStorage.setItem("option4", option4);
+                localStorage.setItem("fontSize", fontSize);
+
+                showAlert("saved options", 4000, false)
+            } catch(err) {
+                showAlert("error saving options", 4000, false);
+            }
+        }
+
+        function checkForSavedOptions() {
+            let option1 = localStorage.getItem("option1");
+            let option2 = localStorage.getItem("option2");
+            let option3 = localStorage.getItem("option3");
+            let option4 = localStorage.getItem("option4");
+            let fontSizeOption = localStorage.getItem("fontSize");
+
+            if(option1 && option2 && option3 && option4 && fontSizeOption) {
+                showAlert("loaded previous options", 3000, false);  
+            }
+
+            if (option1 !== null) {
+                if(option1 == "true") {
+                    toggleOption(1, true);
+                } else if(option1 == "false") {
+                    toggleOption(1, false);
+                }
+            }
+            if (option2 !== null) {
+                if(option2 == "true") {
+                    toggleOption(2, true);
+                } else if(option2 == "false") {
+                    toggleOption(2, false);
+                }
+            }
+            if (option3 !== null) {
+                if(option3 == "true") {
+                    toggleOption(3, true);
+                } else if(option3 == "false") {
+                    toggleOption(3, false);
+                }
+            }
+            if (option4 !== null) {
+                if(option4 == "true") {
+                    toggleOption(4, true);
+                } else if(option4 == "false") {
+                    toggleOption(4, false);
+                }
+            }
+            if(fontSizeOption !== null) {
+                monaco.editor.getEditors()[0].updateOptions({fontSize: fontSizeOption})
+                fontSize = fontSizeOption;  
+                document.getElementById("span").innerText = ` Font: ${fontSize} `;
+            }
+
+        }
+
+        setTimeout(function() {checkForSavedOptions()}, 2000);
+        
+    </script>
+</body>
+
+</html>
+
