@@ -144,10 +144,8 @@
                 iframeDocument.open();
                 iframeDocument.write(code);
                 iframeDocument.close();
-
                 console.log("Updated Output.");
 
-                showAlert("updated output", 1000, false)
             }
         }
 
@@ -158,13 +156,11 @@
             if(doordont) {return;}
 
             if (isFullscreen) {
-                showAlert("fullscreen off")
                 inputContainer.style.display = 'flex';
                 //divider.style.display = 'block';
                 fullscreenBtn.textContent = 'Full Screen';
                 outputContainer.style.flex = '1';
             } else {
-                showAlert("fullscreened output", 2000, false)
                 inputContainer.style.display = 'none';
                 //divider.style.display = 'none';
                 fullscreenBtn.textContent = 'Exit Full Screen';
@@ -188,16 +184,9 @@
                 debounceTimer = setTimeout(updateOutput, 300); // Adjust delay as needed
             });
         }
-
- 
         
-
         setTimeout(function() {updateOutput()}, 1500);
-
-
-
-        
-        
+ 
     </script>
 </body>
 
