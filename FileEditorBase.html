@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #333;
+            /*padding: 0px 0px;*/
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between; /* Spread content across the bar */
+            align-items: center; /* Center items vertically */
+        }
+        #buttons {
+            display: flex;
+            gap: 10px; /* Space between buttons */
+            margin-left: auto; /* Align buttons to the right */
+        }
+        .editor-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #input-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 300px;
+            padding: 0px;            
+            margin-top: 27px;
+        }
+        #monaco-editor {
+            flex: 1;
+            border: none;
+        }
+        #output-container {
+            flex: 1;
+            position: relative;
+            margin-top: 1px;
+            padding: 1px;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        button {
+            padding: 5px 10px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #555;
+        }
+
+        @keyframes slide-down {
+            0% {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            10% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            90% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
+</head>
+<body>
+    <div id="alert-container"></div>
+    <div class="editor-container">
+        <header id="header" class="top-bar">
+            <div id="buttons">
+                <button id="fullscreenBtn">Full Screen</button>
+            </div>
+        </header>
+        <div id="input-container">
+            <div id="monaco-editor"></div>
+        </div>
+        <div id="output-container">
+            <iframe id="output"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        const inputContainer = document.getElementById('input-container');
+        const outputContainer = document.getElementById('output-container');
+        
+        var fileArray = [];
+        var currentFile = document.getElementById('monaco-editor');
+        
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' } });
+
+        let editor;
+        require(['vs/editor/editor.main'], function () {
+            editor = monaco.editor.create(document.getElementById('monaco-editor'), {
+                value: '<!DOCTYPE html>\n<html>\n\n<head>\n    <title>Example</title>\n</head>\n\n<body>\n    <h1>Hello, World!</h1>\n    <p>Write some code!</p>\n</body>\n\n</html>',
+                language: 'html',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: {
+                    enabled: false
+                }
+            });
+            fileArray.push(editor); 
+        });
+
+        function updateOutput() {
+            const code = document.getElementById("monaco-editor").firstChild.firstChild.children[1].innerText;
+            if (String(code) != "") {              
+                //output.srcdoc = code;
+
+                const iframe = document.getElementById('output');
+                const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+                iframeDocument.open();
+                iframeDocument.write(code);
+                iframeDocument.close();
+
+                console.log("Updated Output.");
+
+                showAlert("updated output", 1000, false)
+            }
+        }
+
+        fullscreenBtn.addEventListener('click', () => {
+            const isFullscreen = inputContainer.style.display === 'none';
+            const doordont = false;
+
+            if(doordont) {return;}
+
+            if (isFullscreen) {
+                showAlert("fullscreen off")
+                inputContainer.style.display = 'flex';
+                //divider.style.display = 'block';
+                fullscreenBtn.textContent = 'Full Screen';
+                outputContainer.style.flex = '1';
+            } else {
+                showAlert("fullscreened output", 2000, false)
+                inputContainer.style.display = 'none';
+                //divider.style.display = 'none';
+                fullscreenBtn.textContent = 'Exit Full Screen';
+                outputContainer.style.flex = 'none';
+                outputContainer.style.width = '100%';
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+                event.preventDefault();
+                updateOutput();
+                return false;
+            }
+        });
+
+        let debounceTimer;
+        if (editor) {
+            editor.onDidChangeModelContent(() => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(updateOutput, 300); // Adjust delay as needed
+            });
+        }
+
+ 
+        
+
+        setTimeout(function() {updateOutput()}, 1500);
+
+
+
+        
+        
+    </script>
+</body>
+
+</html>
+
