@@ -15,7 +15,7 @@
 - Export button
 - Options button
 
-[Preview]()
+[Preview](https://github.com/Kaleb1583/editor/blob/main/p/FileEditor.png)
 ---
 
 # FileEditorBase
