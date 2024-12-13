@@ -15,6 +15,7 @@
 - Export button
 - Options button
 
+[Preview]()
 ---
 
 # FileEditorBase
@@ -23,3 +24,5 @@
 
 ### Buttons:
 - Fullscreen button
+
+[Preview]()
