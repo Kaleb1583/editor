@@ -8,6 +8,7 @@
 - Show export button
 - Dark mode
 - Monaco font adjuster
+- switch to basic editor (FileEditorBase.html in FileEditor.html)
 - Reset options
 
 ### Buttons:
