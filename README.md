@@ -1,6 +1,5 @@
-# FileEditor
+# Monaco HTML Editor
 
-**FileEditor** is an HTML editor made with Monaco (Visual Studio Code). It includes various options:
 
 ### Options:
 - Show alerts
@@ -21,7 +20,7 @@
 
 # FileEditorBase
 
-**FileEditorBase** is a base HTML editor with just a plain textbox (no Monaco). It does not have options.
+just a textbox and output.
 
 ### Buttons:
 - Fullscreen button
