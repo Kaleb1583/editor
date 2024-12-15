@@ -15,7 +15,7 @@
 - Export button
 - Options button
 
-[Preview](https://github.com/Kaleb1583/editor/blob/main/p/FileEditor.png)
+[Preview](https://github.com/Kaleb1583/editor/blob/main/p/WithMonaco.png)
 ---
 
 # FileEditorBase
@@ -25,5 +25,5 @@ just a textbox and output.
 ### Buttons:
 - Fullscreen button
 
-[Preview]()
+[Preview](https://github.com/Kaleb1583/editor/blob/main/p/WithoutMonaco.png)
 ---
