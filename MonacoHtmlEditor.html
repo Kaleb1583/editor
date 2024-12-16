@@ -62,7 +62,8 @@
             margin-top: 1px;
             padding: 1px;
             width: 50%; 
-            height: 100vh;  
+            height: 100vh;     
+            margin-top: 30px;
         }
         iframe {
             width: 100%;
@@ -123,14 +124,11 @@
         }
     </style>
 
-    <!--
-        <script id="ScriptElement" src=""></script>
-        https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js
-        https://unpkg.com/monaco-editor@0.52.2/min/vs/loader.js
+    <script id="ScriptElement" src="https://bafybeib5xt3oxneelcwr26dogvc7s4enaqpgvp3oxdpcnz4kqonzrwkv4u.ipfs.dweb.link/"></script>
 
-    -->
-    
-    <script id="ScriptElement" src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/loader.min.js"></script>
+    <link rel="stylesheet" href="./assets/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
 
 </head>
 <body>
@@ -138,13 +136,17 @@
     <div id="editor-container" class="editor-container">
         <header id="header" class="top-bar">
             <div id="buttons">
-                <button id="fullscreenBtn">Full Screen</button>
-                <button id="exportBtn" onclick="mkExport()">Export</button>
-                <button id="optionsBtn" class="optionsBtn" onclick="toggleOptionMenu()">Options</button>
+                <button style="color: white" id="fullscreenBtn">Full Screen</button>
+                <button style="color: white" id="exportBtn" onclick="mkExport()">Export</button>
+                <button style="color: white" id="optionsBtn" class="optionsBtn" onclick="toggleOptionMenu()">Options</button>
             </div>
         </header>
         <div id="input-container">
             <div id="monaco-editor"></div>
+            <div id="noEditorAlert" hidden>
+                <h3><b>theres no editor.</b></h3>
+                <b>go to options/monaco editor settings to create one.</b>
+            </div>
         </div>
         <div id="divider" style="width: 3px; background-color: #ccc; flex-shrink: 0;"></div>
         <div id="output-container">
@@ -155,60 +157,225 @@
                     <p id="option1" onclick="toggleOption(1)" v="true" style="color: green">Alerts/Popups</p>
                     <p id="option2" onclick="toggleOption(2)" v="true" style="color: green">Show Fullscreen Button</p>
                     <p id="option3" onclick="toggleOption(3)" v="true" style="color: green">Show Export Button</p>
-                    <p id="option4" onclick="toggleOption(4)" v="true" style="color: green">Dark Mode</p>
-                    <button onclick="font(-1)" id="dec">-</button><span id="span"> Font: 14 </span><button id="inc" onclick="font(1)">+</button>
+                    <p id="option4" onclick="toggleOption(4)" v="true" style="color: green">Dark Mode</p>   
+                    <p id="option5" onclick="toggleOption(5)" v="true" style="color: green">Show Line Numbers</p>
+                    <button style="color: white" onclick="font(-1)" id="dec">-</button><span id="span"> Font: 14 </span><button id="inc" style="color: white" onclick="font(1)">+</button>
+                    <br><br>
+                    <button style="color: white" id="editorPageBtn" onclick="toggleEditorPage()">Monaco Editor Settings</button>
                     <br><br><br><br>
-                    <button onclick="switchToBaseEditor()">Switch to basic editor</button>
+                    <button style="color: white" onclick="switchToBaseEditor()">Switch To Basic Editor</button>
                     <br>
-                    <button onclick="resetOptions()">Reset Options</button>
+                    <button style="color: white" onclick="resetOptions()">Reset Options</button>
                 </div>
+            </div>
+            <div id="editorPage" style="width: 100%; height: 100%; margin-top: 48px; display: none;">
+                <button id="createEditorBtn" style="color: white" onclick="createEditor(false)">Create Editor</button> 
+                <button id="deleteEditorBtn" style="color: white" onclick="deleteEditor()">Delete Editor</button>
+                <button id="editorPageBackBtn" style="color: white" onclick="toggleEditorPage()">Back</button>
+                <br>
+                <span>Custom Monaco Options Config</span>
+                <br>    
+                <textarea id="createEditorConfig" value="" style="width: 100%; height: 400px; resize: vertical; overflow: auto; font-family: monospace; font-size: 14px; line-height: 1.5; border: 1px solid #ddd; padding: 10px; box-sizing: border-box;"></textarea>
             </div>
         </div>
     </div>
 
     <script>
+
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' } }); // stating that this requires monaco
         const output = document.getElementById('output');
         const inputContainer = document.getElementById('input-container');
         const outputContainer = document.getElementById('output-container');
         const fullscreenBtn = document.getElementById('fullscreenBtn');
-        
-        var doContinue = true;
-        var optionCount = 4;
-        var doAlert = true;
+        let editor; // this is what holds the monaco editor
+        var optionCount = 5; // so for loops know how many times to loop (switched to loops instead of a bunch of if or switch case statements to keep this shorter in lines)
+        var doAlert = true; // do allow alerts, true by default  set to show alerts option value on load (toggleOption())
+        var isUsingMonacoEditor = true;   // prevents errors that can happen after switching to the basic editor caused by event listeners either attempting to interact with a deleted element or trying to update the output of the then deleted monaco editor
+        var firstTimeOpeningEditorPage = true;
+        var isOriginalEditor = true;
+        var onLoadDelay = 0; // (ms) onload delay   0 for none
+        var getPreviousFileOnLoad = true;
 
-        // Monaco Editor (vs code in web)
-        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' } });
+        // note i use options and settings interchangeably
 
-        let editor;
-        var templateCode = '<!DOCTYPE html>\n<html>\n\n<head>\n    <title>Example</title>\n</head>\n\n<body>\n    <h1>Hello, World!</h1>\n    <p>Write some code!</p>\n</body>\n\n</html>';
+        function toggleEditorPage() {
+            //console.log("toggle");
+            const editorPage = document.getElementById("editorPage");
+            const optionsPage = document.getElementById("options-container");
+            if (!editorPage) {console.log("editor page null! returning...");return;}
+            const editorDisplay = window.getComputedStyle(editorPage).display;
+            if (editorDisplay === "block") {
+                //console.log("none / hide");
+                optionsPage.style.display = "block"; // Show options
+                editorPage.style.display = "none";  // Hide editor
+            } else {
+                //console.log("block / show");
+                optionsPage.style.display = "none"; // Hide options
+                editorPage.style.display = "block"; // Show editor
 
-        require(['vs/editor/editor.main'], function () {
-            editor = monaco.editor.create(document.getElementById('monaco-editor'), {
-                value: templateCode,
-                language: 'html',
-                theme: 'vs-dark',
-                automaticLayout: true,
-                minimap: {
-                    enabled: false
+                if(firstTimeOpeningEditorPage) {
+                    require.config({ paths: { 'assets': "./assets" } });
+                    require(['assets/editor.js'], function () {
+                        console.log(editorDefault != null)
+                        if(editorDefault != null) {
+                            console.log(editorDefault)  
+                            document.getElementById("createEditorConfig").value = editorDefault;
+                        }
+                    });
                 }
-            });
-        });
-        // ------------------------------
 
-        function updateOutput(sA = true) {
-            const code = document.getElementById("monaco-editor").firstChild.firstChild.children[1].innerText;
-            if (String(code) != "") {              
-                output.srcdoc = code;
-                console.log("updated output");
+            }  
+            if(firstTimeOpeningEditorPage) {firstTimeOpeningEditorPage=false;}
+        }
 
-                if(sA){
-                    showAlert("updated output", 1000, false)
+        // localStorage.setItem("fontSize", fontSize);
+        // localStorage.getItem("fontSize");
+        function savePreviousFile() {
+            console.log("saved code.");
+            var lastInputFileValue = document.getElementById("monaco-editor").firstChild.firstChild.children[1].innerText;
+            
+            // Remove non-breaking spaces (U+00A0) and replace them with regular spaces
+            lastInputFileValue = lastInputFileValue.replace(/\u00A0/g, ' ');
+
+            localStorage.setItem("lastFile", lastInputFileValue);
+        }
+
+        function getPreviousFile() {
+            console.log("got saved code.");
+            var pF = localStorage.getItem("lastFile");
+            if (pF != null && pF != "") {
+                if (editor != null) {
+                    // Replace any non-breaking spaces if present in the loaded content
+                    pF = pF.replace(/\u00A0/g, ' ');
+
+                    // Set the value to Monaco editor
+                    editor.setValue(pF);
                 }
             }
-        };
+        }
 
+        function loop1() {
+            if(!isUsingMonacoEditor) {return;}
+            if(document.getElementById("monaco-editor").innerText == "") {
+                if(firstTimeOpeningEditorPage == false) {
+                    noEditorAlert.hidden = false;
+                    document.getElementById("monaco-editor").style.display = "none";
+                }
+            } else {
+                noEditorAlert.hidden = true;
+                document.getElementById("monaco-editor").style.display = "block";
+            }  
+
+            
+        }
+        setInterval(loop1, 5000);
         
+        function deleteEditor() {
+            var editorList = monaco.editor.getEditors();
+            for(o=0; o < editorList.length; o++) {
+                monaco.editor.getEditors()[o].dispose();
+            }
+            if(editorList.length == 0) {
+                showAlert("no editor to delete", 5000, false);
+            } else {
+                showAlert("deleted editor", 5000, false);
+            }
+            editor = null;
+        }
+
+        function createEditor(ol) {
+            var templateCode = '<!DOCTYPE html>\n<html>\n\n<head>\n    <title>Example</title>\n</head>\n\n<body>\n    <h1>Hello, World!</h1>\n    <p>Write some code!</p>\n</body>\n\n</html>';
+            if(ol) {
+                // Monaco Editor (vs code in web)
+                    require(['vs/editor/editor.main'], function () {
+                        if(monaco.editor.getEditors().length == 1) {
+                            deleteEditor(); // this allows for a btn to reset the editor to the one that loads on load and if an editor exists already it deletes it.
+                        }
+                        editor = monaco.editor.create(document.getElementById('monaco-editor'), {
+                            value: templateCode,
+                            language: 'html',
+                            theme: 'vs-dark',
+                            automaticLayout: true,
+                            minimap: {
+                                enabled: false
+                            }
+                        });
+                    });
+                // ------------------------------
+            } else { //  onload = false   onload and also for creating editor in monaco editor settings
+                try {
+                    require(['vs/editor/editor.main'], function () {
+                        if(editor != null) { 
+                            showAlert("delete the current editor first!", 3000, true);
+                        } else {
+
+                            if(monaco.editor.getEditors().length == 1) {
+                                showAlert("delete the current editor first!", 3000, true);
+                                return;
+                            }
+
+                            var tao = document.getElementById("createEditorConfig");
+                            if(tao != null && tao.value != "") {
+                                if(String(tao.value).includes("editor = monaco.editor.create(document.getElementById('monaco-editor')")) {      
+                                    showAlert("created editor", 3000, false);
+                                    eval(String(tao.value));
+                                    //console.log("var a = " + String(tao.value).replace("var editor = ", ""))
+                                    //editor = tao.
+                                    isOriginalEditor = false;
+                                } else {
+                                    showAlert("invalid config!", 5000, false);
+                                }
+                            } else {
+                                if(tao == null) {showAlert("error creating editor", 5000, false); console.log("textarea is null")}
+                                if(tao.value == "") {showAlert("invalid config!", 5000, false)}
+                            }
+                        } 
+                    });
+                } catch(err) {
+                    //showAlert("t/c Error creating editor!", 5000, false)
+                    console.log(err)
+                }
+            }
+        }
+
+        createEditor(true); // creates a monaco editor  createEditor(onload=true)
+        
+        function updateOutput(showAlertOnUpdate = true) {
+            if (isUsingMonacoEditor) {
+                try {
+                    // Retrieve code using Monaco Editor's API (safer method)
+                    const editor = monaco.editor.getModels()[0]; // Adjust based on your Monaco setup
+                    const code = editor.getValue(); // Gets the content from the editor
+
+                    if (code.trim() !== "") {
+                        // Correctly target the iframe and update its content
+                        const iframe = document.getElementById("output"); // Ensure your iframe has this ID
+
+                        // Reset srcdoc to ensure proper refresh
+                        iframe.srcdoc = "";
+                        iframe.srcdoc = code;
+
+                        console.log("updated output");
+
+                        savePreviousFile();
+
+                        // Optional alert feedback
+                        if (showAlertOnUpdate) {
+                            showAlert("updated output", 1000, false);
+                        }
+                    } else {
+                        console.warn("No code to update in iframe.");
+                    }
+                } catch (error) {
+                    console.error("Failed to update iframe output:", error);
+                }
+            }
+        }
+
+ 
+        // --- event listeners ---
         document.addEventListener("keydown", function (event) {
+            if(!(isUsingMonacoEditor)) {return;} 
             if (event.key == "Escape") {
                 event.preventDefault();
                 toggleOptionMenu();
@@ -216,7 +383,7 @@
         });
 
         setTimeout(function() {
-
+            if(!(isUsingMonacoEditor)) {return;}
             document.getElementById("output").contentWindow.document.body.addEventListener("keydown", function (event) {
                 if (event.key == "Escape") {
                     toggleOptionMenu();
@@ -225,14 +392,32 @@
 
         }, 5000);
 
-
         document.addEventListener("keydown", function (event) {
+            if(!(isUsingMonacoEditor)) {return;} 
             if ((event.ctrlKey || event.metaKey) && event.key === "s") {
                 event.preventDefault();
                 updateOutput();
                 return false;
             }
         });
+
+        fullscreenBtn.addEventListener('click', () => {
+            const isFullscreen = inputContainer.style.display === 'none';
+            if (isFullscreen) {
+                inputContainer.style.display = 'flex';
+                divider.style.display = 'block';
+                fullscreenBtn.textContent = 'Full Screen';
+                outputContainer.style.flex = '1';
+            } else {
+                inputContainer.style.display = 'none';
+                divider.style.display = 'none';
+                fullscreenBtn.textContent = 'Exit Full Screen';
+                outputContainer.style.flex = 'none';
+                outputContainer.style.width = '100%';
+            }
+        });
+
+        // -----------------------
 
         let debounceTimer;
         if (editor) {
@@ -242,36 +427,11 @@
             });
         }
 
-        fullscreenBtn.addEventListener('click', () => {
-            const isFullscreen = inputContainer.style.display === 'none';
-            const doordont = false;
-
-            if(doordont) {return;}
-
-            if (isFullscreen) {
-                showAlert("fullscreen off")
-                inputContainer.style.display = 'flex';
-                //divider.style.display = 'block';
-                fullscreenBtn.textContent = 'Full Screen';
-                outputContainer.style.flex = '1';
-            } else {
-                showAlert("fullscreened output", 2000, false)
-                inputContainer.style.display = 'none';
-                //divider.style.display = 'none';
-                fullscreenBtn.textContent = 'Exit Full Screen';
-                outputContainer.style.flex = 'none';
-                outputContainer.style.width = '100%';
-            }
-        });
-
-        var ft = true;
-
         function toggleOptionMenu() {
-            if(ft) {showAlert("tip: esc opens options", 10000, true)}
-            if(ft) {ft=false;}
             options = document.getElementById("options-container");
             if(options.style.display == "block") {
                 options.style.display = "none";
+                document.getElementById("editorPage").style.display = "none";   
                 output.hidden = false;
                 //showAlert("showing output", 1500, true)  
                 setTimeout(function() {updateOutput(false)}, 750);
@@ -311,7 +471,7 @@
                 }
             }
 
-            // options toggle update ("" is false)
+            // code for the options
 
             if(document.getElementById("option1").getAttribute("v") == "true") {
                 doAlert = true;
@@ -337,6 +497,12 @@
                 monaco.editor.setTheme("vs");
             }
             
+            if(document.getElementById("option5").getAttribute("v") == "true") {
+                monaco.editor.getEditors()[0].updateOptions({lineNumbers: true})
+            } else if(document.getElementById("option5").getAttribute("v") == "") {
+                monaco.editor.getEditors()[0].updateOptions({lineNumbers: false})
+            }
+
         }
         
         // font is apart of the settings ^^^ but seperate
@@ -367,6 +533,8 @@
 
         
         function switchToBaseEditor(delay=1000) {
+            isUsingMonacoEditor = false;
+            isOriginalEditor = false;
             setTimeout(function() {
                 
                 const container = document.getElementById("alert-container");
@@ -380,9 +548,7 @@
 
                 var baseEditorContainer = document.createElement("iframe");
                 baseEditorContainer.id = "baseEditor";
-                baseEditorContainer.srcdoc = `<div style="font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;"><header id="header" style="position: fixed; top: 0; left: 0; width: 100%; height: 40px; background-color: #333; z-index: 1000; display: flex; justify-content: flex-end; align-items: center; padding: 0 10px; box-sizing: border-box;"><div id="buttons" style="display: flex; gap: 10px;"><button id="fullscreenBtn" style="padding: 5px 10px; background-color: #333; color: white; border: none; border-radius: 5px; cursor: pointer;">Full Screen</button></div></header><div class="editor-container" style="display: flex; width: 100%; height: calc(100% - 40px); margin-top: 40px;"><div id="input-container" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 300px; padding: 0;"><textarea id="input" placeholder="HTML Here." onkeyup="document.getElementById('output').srcdoc=document.getElementById('input').value;" style="width: 100%; height: 100%; resize: none; padding: 10px; box-sizing: border-box; border: 1px solid #ddd;"></textarea></div><div id="output-container" style="flex: 1; position: relative;"><iframe id="output" style="width: 100%; height: 100%; border: none;"></iframe></div></div></div>`;
-
-    
+                baseEditorContainer.srcdoc = "";
                 //document.getElementById("alertInPage").style.display = "none";
                 document.body.append(baseEditorContainer);
                 document.title = "html editor";
@@ -433,12 +599,10 @@
             }
         }
         
-        setTimeout(function() {updateOutput(false)}, 1500);
-
         function resetOptions() {
             for (let i = 1; i <= optionCount; i++) {
                     const optionId = `option${i}`;
-                    if(i==1||i==2||i==3||i==4) {  
+                    if(i==1||i==2||i==3||i==4||i==5) {  
                         // options that default to true   
                         localStorage.setItem(optionId, true);
                     } else if(false) {
@@ -451,7 +615,6 @@
 
         function saveOptions() {
             try {
-                const optionCount = 4;
                 const options = {};
 
                 for (let i = 1; i <= optionCount; i++) {
@@ -468,7 +631,8 @@
                     "show fullscreen btn": options.option2,
                     "show export btn": options.option3,
                     "dark mode": options.option4,
-                    "font size": fontSize
+                    "font size": fontSize,
+                    "show line numbers": options.option5
                 };
 
                 console.log("saved options", savedOptions);
@@ -481,7 +645,6 @@
 
 
         function checkForSavedOptions(isReset = false) {
-            const optionCount = 4;
             const savedOptions = {};
 
             for (let i = 1; i <= optionCount; i++) {
@@ -489,7 +652,7 @@
             }
             savedOptions.fontSize = localStorage.getItem("fontSize");
 
-            if (savedOptions.option1 && savedOptions.option2 && savedOptions.option3 && savedOptions.option4 && savedOptions.fontSize) {
+            if (savedOptions.option1 && savedOptions.option2 && savedOptions.option3 && savedOptions.option4 && savedOptions.option5 && savedOptions.fontSize) {
                 const message = isReset ? "reset options." : "options loaded";
                 showAlert(message, 3000, false);
             }
@@ -512,7 +675,12 @@
 
 
         setTimeout(function() {checkForSavedOptions()}, 1000);
-      
+        setTimeout(function() {updateOutput(false)}, 1500);
+        
+        if(getPreviousFileOnLoad) {
+            getPreviousFile();
+        }
+        
     </script>
 </body>
 
