@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco HTML Editor</title>
+
+    <!-- css stylesheets -->
+    <link rel="stylesheet" href="./assets/css/styles.css"> <!-- main css for editor -->
+    <!-- end of css -->
+
+    <!-- scripts -->
+    <script id="ScriptElement" src="./assets/monaco-editor/0.52.2/min/vs/loader.js"></script> <!-- needed for the editor -->
+    <script src="./assets/js/JQuery.js"></script> <!-- jquery -->
+
+        <!-- parts of the main js code broken up -->
+            <script id="" src="./assets/js/Options.js"></script> <!-- functions for option menu -->
+            <script id="" src="./assets/js/EventListeners.js"></script> <!-- event listener functions-->
+            <script id="" src="./assets/js/Export.js"></script> <!-- functions for exporting code -->
+            <script id="" src="./assets/js/CodeSaverLoader.js"></script> <!-- functions for saving code on code save or loading code on page load-->
+        <!-- end -->
+
+    <!-- end of scripts -->
+</head>
+<body>
+    
+    <div id="alert-container"></div>
+
+    <div id="editor-container" class="editor-container">
+
+        <header id="header" class="top-bar">
+            <div id="buttons">
+                <button style="color: white" id="fullscreenBtn">Full Screen</button>
+                <button style="color: white" id="exportBtn" onclick="mkExport()">Export</button>
+                <button style="color: white" id="optionsBtn" class="optionsBtn" onclick="toggleOptionMenu()">Options</button>
+            </div>
+        </header>
+
+        <div id="input-container" style="width: 50%;">
+            <div id="monaco-editor"></div>
+            <div id="noEditorAlert" hidden>
+                <h3><b>theres no editor.</b></h3>
+                <b>go to options/monaco editor settings to create one.</b>
+            </div>
+        </div>
+
+        <div id="divider" style="width: 3px; background-color: #ccc; flex-shrink: 0;"></div>
+
+        <div id="output-container" style="width: 50%;">
+
+            <iframe id="output"></iframe>
+
+            <div id="options-container" style="width: 50%; height: 100%; margin-top: 48px; display: none;">
+
+                <div id="options">
+                    <h4><b>Options</b></h4>
+                    <p id="option1" onclick="toggleOption(1)" v="true" style="color: green">Alerts/Popups</p>
+                    <p id="option2" onclick="toggleOption(2)" v="true" style="color: green">Show Fullscreen Button</p>
+                    <p id="option3" onclick="toggleOption(3)" v="true" style="color: green">Show Export Button</p>
+                    <p id="option4" onclick="toggleOption(4)" v="true" style="color: green">Dark Mode</p>   
+                    <p id="option5" onclick="toggleOption(5)" v="true" style="color: green">Show Line Numbers</p>
+                    <p id="option6" onclick="toggleOption(6)" v="true" style="color: green">Save & Auto Load Code</p>
+                    <button style="color: white" onclick="font(-1)" id="dec">-</button><span id="span"> Font: 14 </span><button id="inc" style="color: white" onclick="font(1)">+</button>
+                    <br><br>
+                    <button style="color: white" id="resetMonacoEditorValue" onclick="setMonacoEditorToDefault()">Reset Editor</button>
+                    <br><br>
+                    <button style="color: white" onclick="switchToBaseEditor()">Switch To Basic Editor</button>
+                    <br><br>
+                    <button style="color: white" onclick="resetOptions()">Reset Options</button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+
+        function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function run() {
+            console.log("Start");
+
+            await delay(1000);
+
+            console.log("This runs after 1 second.");
+        }
+
+        console.log("--- done loading scripts, main script starting ---")
+        try {      
+             // stating that this requires monaco
+        } catch(err) {
+            document.body.parentElement.innerHTML = "cant get monaco / vsc editor!";
+        }
+
+        //require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' } });
+
+        require.config({
+            paths: {
+                'vs': './assets/monaco-editor/0.52.2/min/vs/'
+            }
+        });
+
+        let editor; // this is what holds the monaco editor 
+        const output = document.getElementById('output'); // iframe output
+        const inputContainer = document.getElementById('input-container'); // input container with monaco-editor (50% left side)
+        const outputContainer = document.getElementById('output-container'); // output container with output (50% right side)
+        const onLoadDelay = 0; // (ms) onload delay   0 for none.
+        const optionCount = 6; // so for loops know how many times to loop (switched to loops instead of a bunch of if or switch case statements to keep this shorter in lines).
+        var doAlert = true; // do allow alerts, true by default  set to show alerts option value on load (toggleOption()).
+        var isUsingMonacoEditor = false;   // prevents errors that can happen after switching to the basic editor caused by event listeners either attempting to interact with a deleted element or trying to update the output of the then deleted monaco editor.
+        var isOriginalEditor = true; // if the original editor is deleted this is set to false.
+        var getPreviousFileOnLoad = true; // gets previous file on load if this is true, if set to false in options this becomes false.
+        var saveCodeOnUpdate = true; // if this is true then it saves code on update, if set to false in options this becomes false       save code automatically and load file on page load are one option(6).
+        var cl = null; // dont remember what this does :|
+        var createEditorOnLoad = true; // true by default, if false: its loads like normal
+        var ignoreReturn = false; // ignore isusingmonacoeditor false -> return for the no editor alert so if createEditorOnLoad is false it shows the no editor alert
+
+        // note i use options and settings interchangeably, whoops.
+        
+        function stopLogging() {console.log=function(){}}
+        //console.info("too vocal? do stopLogging().")
+        console.info("%c too vocal for your liking? use stopLogging();.", "color: black; background-color: yellow; font-weight: bold; font-size: 14px; padding: 4px; border-radius: 4px;");
+
+        function stopAlerts() {doAlert=false}
+
+        function setMonacoEditorToDefault() {
+            
+            try {   
+                deleteEditor(false);   
+                // cannot read prop. of null error fix 
+                // keeps editor div above <div class="context-view"> since without it, it causes errors since its targeting document.getElementById("monaco-editor").children[0] assuming its the editor div but it could the context view div causing errors so this just shuffles the divs to the right spot
+                if(document.getElementById("monaco-editor") != null) {
+                    for(v=0; v < document.getElementById("monaco-editor").children.length; v++) {
+                        if(document.getElementById("monaco-editor").children[v].getAttribute("class") == "context-view") {
+                            var otherdiv = document.getElementById("monaco-editor").children[v];
+                            document.getElementById("monaco-editor").children[v].remove();
+                            createEditor(true);
+                            document.getElementById("monaco-editor").appendChild(otherdiv); 
+                        } else {
+                            createEditor(true);        
+                        }
+                    }
+                }
+                setTimeout(function() {savePreviousFile()}, 3000);
+                console.log("Main: resetted editor")
+            } catch(err){console.log(err)}
+
+        }
+
+        function checkForEditorLoop() {
+            if(!(ignoreReturn)) {        
+                if(!isUsingMonacoEditor) {return;}
+            }
+            if(document.getElementById("monaco-editor").innerText == "") {
+                noEditorAlert.hidden = false;
+                document.getElementById("monaco-editor").style.display = "none";
+                ignoreReturn = false;
+            } else {
+                noEditorAlert.hidden = true;
+                document.getElementById("monaco-editor").style.display = "block";
+            }  
+
+            
+        }
+        setInterval(checkForEditorLoop, 5000);
+        
+        function deleteEditor(sta=true) { // sta = show the alert
+            var editorList = monaco.editor.getEditors();
+            for(o=0; o < editorList.length; o++) {
+                monaco.editor.getEditors()[o].dispose();
+            }
+            if(editorList.length == 0) {
+                if(!(sta)){return;}
+                showAlert("no editor to delete", 5000, false);
+            } else {
+                if(!sta){return;}
+                showAlert("deleted editor", 5000, false);
+            }
+            editor = null;
+        }
+
+        function createEditor(ol) { // ol = onload
+            var templateCode = '<!DOCTYPE html>\n<html>\n\n<head>\n    <title>Example</title>\n</head>\n\n<body>\n    <h1>Hello, World!</h1>\n    <p>Write some code!</p>\n</body>\n\n</html>';
+            if(ol) {
+                // Monaco Editor (vs code in web)
+                    require(['vs/editor/editor.main'], function () {
+                        if(monaco.editor.getEditors().length == 1) {
+                            deleteEditor(false); // this allows for a btn to reset the editor to the one that loads on load and if an editor exists already it deletes it.
+                        }
+                        editor = monaco.editor.create(document.getElementById('monaco-editor'), {
+                            value: templateCode,
+                            language: 'html',
+                            theme: 'vs-dark',
+                            automaticLayout: true,
+                            minimap: {
+                                enabled: false
+                            }
+                        });
+                        
+                        isUsingMonacoEditor = true;
+                        
+                    });
+                // ------------------------------
+            } else { //  onload = false   onload and also for creating editor in monaco editor settings
+                try {
+                    require(['vs/editor/editor.main'], function () {
+                        if(editor != null) { 
+                            showAlert("delete the current editor first!", 3000, true);
+                        } else {
+
+                            if(monaco.editor.getEditors().length == 1) {
+                                showAlert("delete the current editor first!", 3000, true);
+                                return;
+                            }
+
+                            var tao = document.getElementById("createEditorConfig");
+                            if(tao != null && tao.value != "") {
+                                if(String(tao.value).includes("editor = monaco.editor.create(document.getElementById('monaco-editor')")) {      
+                                    showAlert("created editor", 3000, false);
+                                    eval(String(tao.value));
+                                    isOriginalEditor = false;   
+                                    isUsingMonacoEditor = true;                              
+                                    if(fontSize != null && font != null && monaco.editor.getEditors()[0]._configuration._rawOptions.fontSize != null) {
+                                        font(monaco.editor.getEditors()[0]._configuration._rawOptions.fontSize, true);  
+                                    } else {
+                                        console.log("Main: font is null")
+                                    }
+                                } else {
+                                    showAlert("invalid config!", 5000, false);
+                                    console.log("Main: createEditor Error: invalid config! monaco editor options input missing: 'editor = monaco.editor.create(docgetelementbyid=monaco-editor)'")
+                                }
+                            } else {
+                                if(tao == null) {
+                                    showAlert("error creating editor", 5000, false); console.log("textarea is null")
+                                    console.log("Main: createEditor Error: monaco editor options input null!")
+                                }
+                                if(tao.value == "") {
+                                    showAlert("invalid config!", 5000, false)
+                                    console.log("Main: createEditor Error: monaco editor options input is ''!")
+                                }
+                            }
+                        } 
+                    });
+                } catch(err) {
+                    //showAlert("t/c Error creating editor!", 5000, false)
+                    console.log(err)
+                }
+            }
+        }
+
+        if(createEditorOnLoad) {    
+            createEditor(true); // creates a monaco editor  createEditor(onload=true)
+        } else {
+            ignoreReturn = true;
+        }
+        
+        function updateOutput(showAlertOnUpdate = true, save = true) {
+            if (isUsingMonacoEditor) {
+                try {
+                    const editor = monaco.editor.getModels()[0];
+                    const code = editor.getValue(); 
+
+                    if (code.trim() !== "") {
+                        const iframe = document.getElementById("output");
+
+                        iframe.srcdoc = "";
+                        iframe.srcdoc = code;
+
+                        console.log("Main: updated output.");
+
+                        if(saveCodeOnUpdate && save) { savePreviousFile(); }
+
+                        if (showAlertOnUpdate) {
+                            showAlert("updated output", 1000, false);
+                        }
+                    } else {
+                        console.warn("Main: No code to update in iframe.");
+                    }
+                } catch (error) {
+                    console.error("Main: Failed to update iframe output:", error);
+                }
+            }
+        }
+
+        let debounceTimer;
+        if (editor) {
+            editor.onDidChangeModelContent(() => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(updateOutput, 300); // Adjust delay as needed
+            });
+        }
+        
+        // font is apart of the settings ^^^ but seperate
+        var fontSize = 14; // default
+        
+        function font(n, s=false) {
+
+            if(s) {
+                if(n>-1) {   
+                    fontSize = n;
+                }
+            }
+
+            if(String(n).includes("-")) {
+                var before = String(document.getElementById("span").innerText);
+                before = String(before).split(":")[1].replaceAll(" ", "");
+                if(before == 1) {
+                    document.getElementById("dec").style.color = "red";
+                    setTimeout(function() {
+                        document.getElementById("dec").style.color = "white";
+                    }, 1700);
+                    return;
+                }
+                //console.log("font is " + Number(before) + ", " + Number(before) + "-1 = " + (Number(before)-1) + "  setting font & span to: " + (Number(before)-1))
+                fontSize = (Number(before)-1);
+            } else if(!(String(n).includes("-"))){
+                var before = String(document.getElementById("span").innerText);
+                before = String(before).split(":")[1].replaceAll(" ", "");
+                fontSize = (Number(before)+1);
+            }
+
+            monaco.editor.getEditors()[0].updateOptions({fontSize: fontSize})
+            document.getElementById("span").innerText = ` Font: ${fontSize} `;
+        };
+        
+        function switchToBaseEditor(delay=1000) {
+            isUsingMonacoEditor = false;
+            isOriginalEditor = false;
+            setTimeout(function() {
+                
+                const result = window.confirm("do you want to switch to the basic editor?");
+    
+                if (result) {
+                    const container = document.getElementById("alert-container");
+                    container.style.zIndex = 11; // (+1 more than the header zIndex)
+                    const alertElement = document.createElement("div");
+                    alertElement.className = "alert-message";
+                    alertElement.textContent = "switching to basic editor";
+                    container.appendChild(alertElement);
+
+                    if(document.getElementById("editor-container") != null) {document.getElementById("editor-container").remove();}
+
+                    var baseEditorContainer = document.createElement("iframe");
+                    baseEditorContainer.id = "baseEditor";
+                    baseEditorContainer.srcdoc = "";
+                    //document.getElementById("alertInPage").style.display = "none";
+                    document.body.append(baseEditorContainer);
+                    document.title = "html editor";
+                    //document.getElementById("alertInPage").remove();
+                    document.getElementById("alert-container").remove();
+                    if(document.getElementsByClassName("monaco-aria-container")[0] != null) {
+                        document.getElementsByClassName("monaco-aria-container")[0].remove();
+                    }
+                } else {
+                    // canceled switch
+                }
+            }, delay);
+
+        } // switch editor
+    
+        function showAlert(message="", ms=4000, removeOthers=false) {
+            if(!(doAlert)) {
+                return;
+            }
+            const container = document.getElementById("alert-container");
+            container.style.zIndex = 1001; // (+1 more than the header zIndex)
+            const alertElement = document.createElement("div");
+            alertElement.className = "alert-message";
+            alertElement.textContent = message;
+            var removePreviousMessages = removeOthers;
+            if(removePreviousMessages == true) {
+                container.innerHTML = "";
+            }
+            container.appendChild(alertElement);
+            setTimeout(() => {
+                alertElement.remove();
+            }, ms);
+
+        }
+
+        setTimeout(function() {
+            try {
+                if(monaco && monaco.editor != null) {
+                    checkForSavedOptions();
+                }  
+            } catch(err) {
+                //console.log(err)
+            }
+        }, 1000);
+
+        setTimeout(function() {
+            updateOutput(false, false)
+        }, 1500);
+        
+        if(getPreviousFileOnLoad) {
+            getPreviousFile();
+        }
+
+        setTimeout(function() {
+            try {
+                if(isUsingMonacoEditor == false) {
+                    showAlert("editor didnt load automatically! not good.", 6500, false);
+                }  
+            } catch(err) {
+                //console.log(err)
+            }
+        }, 10000)
+        
+    </script>
+</body>
+
+</html>
