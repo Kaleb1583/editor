@@ -1,28 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor</title>
+    <title>Monaco HTML Editor</title>
 
     <!-- css stylesheets -->
     <link rel="stylesheet" href="./assets/css/styles.css"> <!-- main css for editor -->
     <!-- end of css -->
 
+    <script> // before loading / importing
+        var scriptsLoaded = []; // scripts below use this variable so its needs to be defined before the scripts run.
+    </script>
+
     <!-- scripts -->
-    <script id="ScriptElement" src="./assets/monaco-editor/0.52.2/min/vs/loader.js"></script> <!-- needed for the editor -->
 
         <!-- parts of the main js code broken up -->
-            <script id="" src="./assets/js/Options.js"></script> <!-- functions for option menu -->
-            <script id="" src="./assets/js/EventListeners.js"></script> <!-- event listener functions-->
-            <script id="" src="./assets/js/Export.js"></script> <!-- functions for exporting code -->
-            <script id="" src="./assets/js/CodeSaverLoader.js"></script> <!-- functions for saving code on code save or loading code on page load-->
+            
+            <script id="" src="./assets/js/Options.js"></script> 
+
+             <!--  
+            <script id="ScriptElement" src="./assets/monaco-editor/0.52.2/min/vs/loader.js"></script>   
+            
+            <script id="" src="./assets/js/EventListeners.js"></script>
+            <script id="" src="./assets/js/Export.js"></script>
+            <script id="" src="./assets/js/CodeSaverLoader.js"></script> functions for saving code on code save or loading code on page load 
+            -->
+
         <!-- end -->
 
+    <script> // after loading / importing
+
+        
+        console.log("--- done loading scripts, main script starting ---")
+
+        // functions to help check if all the scripts were loaded.
+        
+        function compareArray(arr1, arr2) {
+            if (arr1 == null || arr2 == null) {return null;}
+            if (arr1.length !== arr2.length) {return false;}
+            const normalize = (arr) => arr.map((val) => val.toString().trim().toLowerCase()).sort();
+            const normalizedArr1 = normalize(arr1);
+            const normalizedArr2 = normalize(arr2);
+            return normalizedArr1.every((val, index) => val === normalizedArr2[index]);
+        }
+
+        function findMissing(expected, loaded) {
+            const normalize = (arr) => arr.map((val) => val.toString().trim().toLowerCase());
+            const normalizedExpected = normalize(expected);
+            const normalizedLoaded = normalize(loaded);
+            const missing = normalizedExpected.filter((script) => !normalizedLoaded.includes(script));
+            return missing.map((script) => expected.find((originalScript) => originalScript.toLowerCase().trim() === script));
+        }
+
+    </script>
+
     <!-- end of scripts -->
+
 </head>
 <body>
-    
+
+
     <div id="alert-container"></div>
 
     <div id="editor-container" class="editor-container">
@@ -37,10 +76,6 @@
 
         <div id="input-container" style="width: 50%;">
             <div id="monaco-editor"></div>
-            <div id="noEditorAlert" hidden>
-                <h3><b>theres no editor.</b></h3>
-                <b>go to options/monaco editor settings to create one.</b>
-            </div>
         </div>
 
         <div id="divider" style="width: 3px; background-color: #ccc; flex-shrink: 0;"></div>
@@ -74,33 +109,8 @@
     </div>
 
     <script>
-
-        function delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        async function run() {
-            console.log("Start");
-
-            await delay(1000);
-
-            console.log("This runs after 1 second.");
-        }
-
-        console.log("--- done loading scripts, main script starting ---")
-        try {      
-             // stating that this requires monaco
-        } catch(err) {
-            document.body.parentElement.innerHTML = "cant get monaco / vsc editor!";
-        }
-
-        //require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' } });
-
-        require.config({
-            paths: {
-                'vs': './assets/monaco-editor/0.52.2/min/vs/'
-            }
-        });
+        
+        // so this editor is a little weird when it comes to getting monaco so i made it so theres checks when initializing
 
         let editor; // this is what holds the monaco editor 
         const output = document.getElementById('output'); // iframe output
@@ -111,19 +121,178 @@
         var doAlert = true; // do allow alerts, true by default  set to show alerts option value on load (toggleOption()).
         var isUsingMonacoEditor = false;   // prevents errors that can happen after switching to the basic editor caused by event listeners either attempting to interact with a deleted element or trying to update the output of the then deleted monaco editor.
         var isOriginalEditor = true; // if the original editor is deleted this is set to false.
+        var isThereAnEditor = Boolean(document.getElementById("monaco-editor").firstChild == null); // if theres a element in monaco-editor / if theres an editor
         var getPreviousFileOnLoad = true; // gets previous file on load if this is true, if set to false in options this becomes false.
         var saveCodeOnUpdate = true; // if this is true then it saves code on update, if set to false in options this becomes false       save code automatically and load file on page load are one option(6).
-        var cl = null; // dont remember what this does :|
         var createEditorOnLoad = true; // true by default, if false: its loads like normal
         var ignoreReturn = false; // ignore isusingmonacoeditor false -> return for the no editor alert so if createEditorOnLoad is false it shows the no editor alert
+        var scripts = ["Monaco-Editor", "Options", "Export", "CodeSaverLoader"]; // exclude eventlisteners since its delayed.
+        var scriptsToLoadCount = 4;
+        var aresame = compareArray(scripts, scriptsLoaded);
+        var canUseRequire = null;
 
         // note i use options and settings interchangeably, whoops.
-        
-        function stopLogging() {console.log=function(){}}
-        //console.info("too vocal? do stopLogging().")
-        console.info("%c too vocal for your liking? use stopLogging();.", "color: black; background-color: yellow; font-weight: bold; font-size: 14px; padding: 4px; border-radius: 4px;");
+                
 
-        function stopAlerts() {doAlert=false}
+        try {
+            require.config({
+                paths: {
+                    'vs': './assets/monaco-editor/0.52.2/min/vs/'
+                }
+            });
+        } catch(err) {
+            canUseRequire = false;
+            console.log("require err, most likely monaco-ediitor couldnt be loaded")//, err)
+        }
+
+        if(aresame) {
+            doRun=true;
+            console.log("Main: all scripts loaded successfully.")
+        } else if(!(aresame)) {
+            doRun = false;
+            createEditorOnLoad = false;
+            if(scripts.length != scriptsLoaded.length) {
+                console.log("Main: missing scripts!")
+                document.getElementById("editor-container").style.display = "none";
+
+                missing = findMissing(scripts, scriptsLoaded);
+
+                var scriptContainer = document.createElement("div");
+                scriptContainer.id = "ScriptLoaderContainer";
+                scriptContainer.style.display = "block";
+
+                var header = document.createElement("h4");
+                header.innerHTML = "<b>Problems loading editor.</b>";
+                scriptContainer.appendChild(header);
+
+                if (missing.includes("Monaco-Editor")) {
+                    console.log("Main: missing file: Monaco Editor!");
+                    var meE = document.createElement("p");
+                    meE.style.color = "red";
+                    meE.innerHTML = "Couldnt Load: Monaco Editor";
+                    scriptContainer.appendChild(meE);
+                }
+
+                if (missing.includes("Options")) {
+                    console.log("Main: missing file: Options!");
+                    var oE = document.createElement("p");
+                    oE.style.color = "#CC9900";
+                    oE.innerHTML = "Couldnt Load: Options";
+                    scriptContainer.appendChild(oE);
+                }
+
+                if (missing.includes("CodeSaverLoader")) {
+                    console.log("Main: missing file: CodeSaverLoader!");
+                    var cslE = document.createElement("p");
+                    cslE.style.color = "#CC9900";
+                    cslE.innerHTML = "Couldnt Load: Code Saver & Loader";
+                    scriptContainer.appendChild(cslE);
+                }
+
+                if (missing.includes("Export")) {
+                    console.log("Main: missing file: Export!");
+                    var eE = document.createElement("p");
+                    eE.style.color = "#CC9900";
+                    eE.innerHTML = "Couldnt Load: Export";
+                    scriptContainer.appendChild(eE);
+                }
+
+                console.log("Main: " + scriptsLoaded.length + "/" + scripts.length + " scripts loaded.")
+
+                var footer = document.createElement("div");
+
+                if (missing.includes("Monaco-Editor")) {
+                    footer.innerHTML = "<br> <b>try to load again: </b> <button onclick='restartScriptLoader(missing)'>restart script loader</button> <br> <b>Or try refreshing: </b> <button onclick='window.location.reload()'>Refresh</button> <br> <b>Or use basic editor: </b><button onclick='switchToBaseEditor()'>Switch To Basic Editor</button>";
+                } else {
+                    var fv = ""; // Initialize the missing components string
+                    var missingComponents = []; 
+
+                    if (missing.includes("Options")) {
+                        missingComponents.push("Options");
+                    }
+                    if (missing.includes("CodeSaverLoader")) {
+                        missingComponents.push("CodeSaverLoader");
+                    }
+                    if (missing.includes("Export")) {
+                        missingComponents.push("Export");
+                    }
+
+                    if (missingComponents.length > 0) {
+                        fv = "Continue without: " + missingComponents.join(" & ");
+                    }
+
+                    footer.innerHTML = "<br><button id='continueWithoutMissingOptionsBtn' onclick='continueWithoutMissingOptions()'>" + String(fv);
+                }
+
+
+                scriptContainer.appendChild(footer);
+                document.body.appendChild(scriptContainer);
+
+            }
+        } else {
+            doRun = true;
+        }
+
+        function continueWithoutMissingOptions() {
+            // user can continue without options, code saver / loader, and export since they can be optional (but if monaco-editor is missing then the user has to use the basic editor which doesnt have options,code saver loader, & export which in that case this isnt needed)
+            console.log("continuing with missing (optional) scripts ") 
+            if(document.getElementById("ScriptLoaderContainer") != null && document.getElementById("editor-container") != null) {
+
+                if(missing != null) {
+                    document.getElementById("continueWithoutMissingOptionsBtn").style.display = "none";
+
+                    if(missing.includes("Options")) {
+                        if(document.getElementById("optionsBtn") != null) {
+                            document.getElementById("optionsBtn").style.display = "none";
+                        } 
+                    }   
+
+                    setTimeout(function() {
+                        document.getElementById("ScriptLoaderContainer").remove();
+                        document.getElementById("editor-container").style.display = "block";
+                        createEditor(true);
+                    }, 2000);
+
+                }
+            }
+                            
+        }
+
+
+        function restartScriptLoader(missing) {
+            console.log("Main: restarting script loader", missing)
+            if(missing.includes("Monaco-Editor")) {
+
+                console.log("missing monaco, trying to get it again...")
+
+                // monaco-editor
+                var couldGetMonaco = null;
+                var couldGetMonacoLocally = null;
+                var couldGetMonacoFromCDNJS = null;
+
+                
+                try {
+                    var script = document.createElement('script');
+                    script.src = './assets/monaco-editor/0.52.2/min/vs/loader.js';
+                    document.head.appendChild(script);
+
+                    setTimeout(function() {
+                        
+                    }, 1500);
+
+
+                } catch(err) {
+
+                }
+                
+
+                // - monaco-editor end -
+
+                // check what scripts were and werent loaded
+
+            }
+        }
+
 
         function setMonacoEditorToDefault() {
             
@@ -149,22 +318,6 @@
 
         }
 
-        function checkForEditorLoop() {
-            if(!(ignoreReturn)) {        
-                if(!isUsingMonacoEditor) {return;}
-            }
-            if(document.getElementById("monaco-editor").innerText == "") {
-                noEditorAlert.hidden = false;
-                document.getElementById("monaco-editor").style.display = "none";
-                ignoreReturn = false;
-            } else {
-                noEditorAlert.hidden = true;
-                document.getElementById("monaco-editor").style.display = "block";
-            }  
-
-            
-        }
-        setInterval(checkForEditorLoop, 5000);
         
         function deleteEditor(sta=true) { // sta = show the alert
             var editorList = monaco.editor.getEditors();
@@ -203,50 +356,6 @@
                         
                     });
                 // ------------------------------
-            } else { //  onload = false   onload and also for creating editor in monaco editor settings
-                try {
-                    require(['vs/editor/editor.main'], function () {
-                        if(editor != null) { 
-                            showAlert("delete the current editor first!", 3000, true);
-                        } else {
-
-                            if(monaco.editor.getEditors().length == 1) {
-                                showAlert("delete the current editor first!", 3000, true);
-                                return;
-                            }
-
-                            var tao = document.getElementById("createEditorConfig");
-                            if(tao != null && tao.value != "") {
-                                if(String(tao.value).includes("editor = monaco.editor.create(document.getElementById('monaco-editor')")) {      
-                                    showAlert("created editor", 3000, false);
-                                    eval(String(tao.value));
-                                    isOriginalEditor = false;   
-                                    isUsingMonacoEditor = true;                              
-                                    if(fontSize != null && font != null && monaco.editor.getEditors()[0]._configuration._rawOptions.fontSize != null) {
-                                        font(monaco.editor.getEditors()[0]._configuration._rawOptions.fontSize, true);  
-                                    } else {
-                                        console.log("Main: font is null")
-                                    }
-                                } else {
-                                    showAlert("invalid config!", 5000, false);
-                                    console.log("Main: createEditor Error: invalid config! monaco editor options input missing: 'editor = monaco.editor.create(docgetelementbyid=monaco-editor)'")
-                                }
-                            } else {
-                                if(tao == null) {
-                                    showAlert("error creating editor", 5000, false); console.log("textarea is null")
-                                    console.log("Main: createEditor Error: monaco editor options input null!")
-                                }
-                                if(tao.value == "") {
-                                    showAlert("invalid config!", 5000, false)
-                                    console.log("Main: createEditor Error: monaco editor options input is ''!")
-                                }
-                            }
-                        } 
-                    });
-                } catch(err) {
-                    //showAlert("t/c Error creating editor!", 5000, false)
-                    console.log(err)
-                }
             }
         }
 
@@ -292,7 +401,6 @@
             });
         }
         
-        // font is apart of the settings ^^^ but seperate
         var fontSize = 14; // default
         
         function font(n, s=false) {
@@ -326,6 +434,9 @@
         };
         
         function switchToBaseEditor(delay=1000) {
+
+            if(document.getElementById("ScriptLoaderContainer") != null && document.getElementById("ScriptLoaderContainer") == "")
+
             isUsingMonacoEditor = false;
             isOriginalEditor = false;
             setTimeout(function() {
@@ -395,18 +506,21 @@
         }, 1500);
         
         if(getPreviousFileOnLoad) {
-            getPreviousFile();
-        }
-
-        setTimeout(function() {
             try {
-                if(isUsingMonacoEditor == false) {
-                    showAlert("editor didnt load automatically! not good.", 6500, false);
-                }  
+                getPreviousFile();
+                setTimeout(function() {
+                
+                    if(editor != null) {
+                        editor.getAction('editor.action.formatDocument').run();   
+                    }
+
+                }, 2000)
             } catch(err) {
                 //console.log(err)
             }
-        }, 10000)
+        }
+
+
         
     </script>
 </body>
