@@ -1,1 +1,97 @@
+PROBLEMS / ERRORS / BUGS
+
+txt file for notes
+
+problem: after resetting the editor to default it deletes the current editor, creates a editor with the default code, and then saves the code with savePreviousFile() but document.getElementById("monaco-editor").firstChild.firstChild is unreadable
+
+fix? add timeout so its createEditor -> delay -> savePreviousFile
+
+
+problem: "require not defined" 
+problem: loading errors like missing monaco files or some of the files i made to split up to shorten the html line count
+
+fix: 
+
+
+    created script loader so if any missing scripts are detected it shows a page
+    to ask the user what they want to document
+
+    if: missing Monaco-Editor & others:
+        refresh?
+        try to reload missing scripts loader?
+        switch to basic editor with no monaco & none of the other scripts
+
+    if: mmissing Options or CodeSaverLoader or Export:
+
+        continue without {missing option(s)}
+
+
+
+
+
+
+random code that was removed but i kept in case i needed it again:
+
+
+      
+require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' } });
+
+
+<script src="./assets/js/JQuery.js"></script> <!-- jquery -->
+
+
+<script id="ScriptElement" src=""></script>
+
+for importing monaco:
+
+    "https://bafybeib5xt3oxneelcwr26dogvc7s4enaqpgvp3oxdpcnz4kqonzrwkv4u.ipfs.dweb.link/"
+
+    or 
+
+    "./assets/monaco-loader.js"
+
+    or
+
+    "https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+
+
+
+
+
+
+
+example html for testing:
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Example</title>
+</head>
+
+<body>
+    <h1>Hello, World!</h1>
+    <p>Write some code!</p>
+    <button onclick="change(-1)">-</button><a id="middle">0</a><button onclick="change(+1)">+</button>
+
+    <script>
+        function change(inde) {
+            if(inde == 1) {
+                var before = document.getElementById("middle").innerText;
+                var after = (parseInt(before)+1);
+                document.getElementById("middle").innerText = String(after);
+            } else if(inde == -1) {
+                var before = document.getElementById("middle").innerText;
+                if(parseInt(before) == 0) {return;}
+                var after = (parseInt(before)-1);
+                document.getElementById("middle").innerText = String(after);
+            }
+        }
+    </script>
+</body>
+
+</html>
+
+
+
 
