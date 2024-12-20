@@ -4,3 +4,6 @@ PROBLEMS / ERRORS / BUGS
 problem: after resetting the editor to default it deletes the current editor, creates a editor with the default code, and then saves the code with savePreviousFile() but document.getElementById("monaco-editor").firstChild.firstChild is unreadable
 
 fix? add timeout so its createEditor -> delay -> savePreviousFile
+
+
+
