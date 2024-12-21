@@ -1,0 +1,9 @@
+
+IDEAS:
+
+  --- snippets ---
+  have btn V 
+  have working btn show snippets function X
+  have load snippets from local storage X
+  have button in snippets menu to save, edit and import code
+  ----------------
