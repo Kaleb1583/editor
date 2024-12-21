@@ -43,7 +43,10 @@ just a textbox and output.
 
 clone repo with cmd: git clone https://github.com/kaleb1583/editor
 
-open index.html.
+What you need:
+  index.html (monaco editor)
+  HTMLEditor.html (basic editor)
+  /assets/ (monaco editor code)
 
 Or:
 
