@@ -26,7 +26,7 @@ note: vscode.dev is the best vsc in the browser but is missing the feature to ru
 - Export button
 - Options button
 
-[Preview (outdated)](https://github.com/Kaleb1583/editor/blob/main/p/WithMonaco.png)
+[Preview](https://github.com/Kaleb1583/editor/blob/main/previews/withmonaco.png)
 ---
 
 # FileEditorBase
