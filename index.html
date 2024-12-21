@@ -17,11 +17,7 @@
     <!-- scripts -->
 
         <!-- parts of the main js code broken up -->
-             
-            <script id="" src="./assets/js/Options.js"></script>
-            <script id="" src="./assets/js/EventListeners.js"></script>
-            <script id="" src="./assets/js/Export.js"></script>
-            <script id="" src="./assets/js/CodeSaverLoader.js"></script>
+
             <script id="ScriptElement" src="./assets/monaco-editor/0.52.2/min/vs/loader.js"></script>
 
         <!-- end -->
@@ -29,26 +25,7 @@
     <script> // after loading / importing
 
         
-        console.log("--- done loading scripts, main script starting ---")
-
-        // functions to help check if all the scripts were loaded.
-        
-        function compareArray(arr1, arr2) {
-            if (arr1 == null || arr2 == null) {return null;}
-            if (arr1.length !== arr2.length) {return false;}
-            const normalize = (arr) => arr.map((val) => val.toString().trim().toLowerCase()).sort();
-            const normalizedArr1 = normalize(arr1);
-            const normalizedArr2 = normalize(arr2);
-            return normalizedArr1.every((val, index) => val === normalizedArr2[index]);
-        }
-
-        function findMissing(expected, loaded) {
-            const normalize = (arr) => arr.map((val) => val.toString().trim().toLowerCase());
-            const normalizedExpected = normalize(expected);
-            const normalizedLoaded = normalize(loaded);
-            const missing = normalizedExpected.filter((script) => !normalizedLoaded.includes(script));
-            return missing.map((script) => expected.find((originalScript) => originalScript.toLowerCase().trim() === script));
-        }
+        console.log("--- done loading scripts and css, main script starting ---")
 
     </script>
 
@@ -121,10 +98,8 @@
         var saveCodeOnUpdate = true; // if this is true then it saves code on update, if set to false in options this becomes false       save code automatically and load file on page load are one option(6).
         var createEditorOnLoad = true; // true by default, if false: its loads like normal
         var ignoreReturn = false; // ignore isusingmonacoeditor false -> return for the no editor alert so if createEditorOnLoad is false it shows the no editor alert
-        var scripts = ["Monaco-Editor", "Options", "Export", "CodeSaverLoader"]; // exclude eventlisteners since its delayed.
-        var scriptsToLoadCount = 4;
         var canUseRequire = null;  
-
+        var canUseMonaco = false;
         // note i use options and settings interchangeably, whoops.
         
         const url = new URL(window.location.href);
@@ -137,104 +112,43 @@
                 }
             });
         } catch(err) {
-            canUseRequire = false;
             console.log("require err, most likely monaco-ediitor couldnt be loaded")//, err)
-            showAlert("Error with monaco editor, try refreshing!", 5000, false);
+            //showAlert("Error with monaco editor, try refreshing!", 5000, false);
+        }
 
+        try {
+            require(['vs/editor/editor.main'], function () {
+                monaco;
+            });
+            gotMonaco=true;
+        } catch(err) {
+            gotMonaco = false;
+            console.log("cant use 'monaco;'")
         }
 
         function scriptLoader() {
-            console.log("Main: script loader runned")
-            var aresame = compareArray(scripts, scriptsLoaded);
-            if(aresame) {
+            //console.log("Main: script loader runned")
+            if(gotMonaco) {
                 doRun=true;
-                console.log("Main: all scripts loaded successfully.")
-            } else if(!(aresame)) {
+                console.log("Main: monaco editor loaded successfully")
+            } else if(!(gotMonaco)) {
                 doRun = false;
                 createEditorOnLoad = false;
-                if(scripts.length != scriptsLoaded.length) {
-                    console.log("Main: missing scripts!")
-                    document.getElementById("editor-container").style.display = "none";
+                document.getElementById("editor-container").style.display = "none";
 
-                    missing = findMissing(scripts, scriptsLoaded);
+                var scriptContainer = document.createElement("div");
+                scriptContainer.id = "ScriptLoaderContainer";
+                scriptContainer.style.display = "block";
 
-                    var scriptContainer = document.createElement("div");
-                    scriptContainer.id = "ScriptLoaderContainer";
-                    scriptContainer.style.display = "block";
+                console.log("Main: missing file: Monaco Editor!");
+                var meE = document.createElement("p");
+                meE.id = "meE";
+                meE.style.color = "red";
+                meE.innerHTML = "Couldnt Load: Monaco Editor";
+                scriptContainer.appendChild(meE);
 
-                    var header = document.createElement("h4");
-                    header.innerHTML = "<b>Problems loading editor.</b>";
-                    scriptContainer.appendChild(header);
+                document.body.appendChild(scriptContainer);
 
-                    if (missing.includes("Monaco-Editor")) {
-                        console.log("Main: missing file: Monaco Editor!");
-                        var meE = document.createElement("p");
-                        meE.id = "meE";
-                        meE.style.color = "red";
-                        meE.innerHTML = "Couldnt Load: Monaco Editor";
-                        scriptContainer.appendChild(meE);
-                    }
-
-                    if (missing.includes("Options")) {
-                        console.log("Main: missing file: Options!");
-                        var oE = document.createElement("p");
-                        oE.id = "oE";
-                        oE.style.color = "#CC9900";
-                        oE.innerHTML = "Couldnt Load: Options";
-                        scriptContainer.appendChild(oE);
-                    }
-
-                    if (missing.includes("CodeSaverLoader")) {
-                        console.log("Main: missing file: CodeSaverLoader!");
-                        var cslE = document.createElement("p");
-                        cslE.id = "cslE";
-                        cslE.style.color = "#CC9900";
-                        cslE.innerHTML = "Couldnt Load: Code Saver & Loader";
-                        scriptContainer.appendChild(cslE);
-                    }
-
-                    if (missing.includes("Export")) {
-                        console.log("Main: missing file: Export!");
-                        var eE = document.createElement("p");
-                        eE.id = "eE";
-                        eE.style.color = "#CC9900";
-                        eE.innerHTML = "Couldnt Load: Export";
-                        scriptContainer.appendChild(eE);
-                    }
-
-                    console.log("Main: " + scriptsLoaded.length + "/" + scripts.length + " scripts loaded.")
-
-                    var footer = document.createElement("div");
-                    footer.id = "footer";
-
-                    if (missing.includes("Monaco-Editor")) {
-                        footer.innerHTML = "<br> <b>try refreshing: </b> <button onclick='window.location.reload()'>Refresh</button> <br> <b>Or use basic editor: </b><button onclick='switchToBaseEditor()'>Switch To Basic Editor</button>";
-                    } else {
-                        var fv = ""; // Initialize the missing components string
-                        var missingComponents = []; 
-
-                        if (missing.includes("Options")) {
-                            missingComponents.push("Options");
-                        }
-                        if (missing.includes("CodeSaverLoader")) {
-                            missingComponents.push("CodeSaverLoader");
-                        }
-                        if (missing.includes("Export")) {
-                            missingComponents.push("Export");
-                        }
-
-                        if (missingComponents.length > 0) {
-                            fv = "Continue without: " + missingComponents.join(" & ");
-                        }
-
-                        footer.innerHTML = "</button> <br> <button id='retryScriptsLoadBtn' onclick='retryScriptsLoad()'>Try to load scripts again</button>" + "<br><button id='continueWithoutMissingOptionsBtn' onclick='continueWithoutMissingOptions()'>" + String(fv);
-                    }
-
-
-                    scriptContainer.appendChild(footer);
-                    document.body.appendChild(scriptContainer);
-
-                }
             } else {
                 doRun = true;
             }
@@ -243,88 +157,7 @@
 
         scriptLoader();
 
-        function missingScriptsInfo() {if(scripts!=null&&scriptsLoaded!=null){console.log("Scripts", scripts);console.log("Scripts Loaded", scriptsLoaded);console.log(scriptsLoaded.length + "/" + scripts.length + " scripts loaded")}}
-
-        function continueWithoutMissingOptions() {
-            // user can continue without options, code saver / loader, and export since they can be optional (but if monaco-editor is missing then the user has to use the basic editor which doesnt have options,code saver loader, & export which in that case this isnt needed)
-            console.log("continuing with missing (optional) scripts ") 
-            if(document.getElementById("ScriptLoaderContainer") != null && document.getElementById("editor-container") != null) {
-
-                if(missing != null) {
-                    document.getElementById("continueWithoutMissingOptionsBtn").style.display = "none";
-                    document.getElementById("retryScriptsLoadBtn").style.display = "none";
-                    document.getElementById("footer").innerHTML = "<br> <b>loading editor...</b>";
-
-                    if(missing.includes("Options")) {
-                        if(document.getElementById("optionsBtn") != null) {
-                            document.getElementById("optionsBtn").style.display = "none";
-                        } 
-                    }   
-
-                    if(missing.includes("CodeSaverLoader")) {
-                        getPreviousFileOnLoad = false;
-                        saveCodeOnUpdate = false;
-                    }   
-
-                    if(missing.includes("Export")) {
-                        if(document.getElementById("exportBtn") != null) {
-                            document.getElementById("exportBtn").style.display = "none";
-                        }
-                    }
-
-                    setTimeout(function() {
-                        document.getElementById("ScriptLoaderContainer").remove();
-                        document.getElementById("editor-container").style.display = "block";
-                        createEditor(true);
-                    }, 2000);
-
-                }
-            }
-                            
-        }
-
-        function retryScriptsLoad() {
-
-            console.log("Main: attemping to load scripts again.")
-
-            if(missing != null) {
-
-                if(missing.includes("Options")) {
-                    var script = document.createElement('script');
-                    script.src = "./assets/js/Options.js";
-                    document.body.appendChild(script);
-                }
-
-                if(missing.includes("CodeSaverLoader")) {
-                    var script = document.createElement('script');
-                    script.src = "./assets/js/CodeSaverLoader.js";
-                    document.body.appendChild(script);
-                } 
-                
-                if(missing.includes("Export")) {
-                    var script = document.createElement('script');
-                    script.src = "./assets/js/Export.js";
-                    document.body.appendChild(script);
-                } 
-
-                document.getElementById("footer").innerHTML = "<br> Updating...";
-                setTimeout(function() {     
-                    scriptLoader();
-                    setTimeout(function() {
-                        if(doRun == true) {           
-                            showAlert("scripts are now all loaded!", 4000, false)
-                            document.getElementById("editor-container").style.display = "block";
-                            createEditor(true);
-                            document.getElementById("ScriptLoaderContainer").remove();
-                        }
-                    }, 2000);
-                }, 2000);
-
-            } else {
-                console.log("missing is null")
-            }
-
-        }
+ 
 
         function setMonacoEditorToDefault() {
             
@@ -523,6 +356,336 @@
 
         }
 
+        //  ----------------- SCRIPTS MOVED INTO HTML  ----------------- 
+        console.log("loaded options.")
+
+        function resetOptions() {
+            for (let i = 1; i <= optionCount; i++) {
+                    const optionId = `option${i}`;
+                    if(i==1||i==2||i==3||i==4||i==5) {  
+                        // options that default to true   
+                        localStorage.setItem(optionId, true);
+                    } else if(false) {
+                        // options that default to false
+                    }
+            }
+            localStorage.setItem("fontSize", 14);
+            checkForSavedOptions(true); // update
+        }
+
+        function saveOptions() {
+            try {
+                const options = {};
+
+                for (let i = 1; i <= optionCount; i++) {
+                    const optionId = `option${i}`;
+                    const value = Boolean(document.getElementById(optionId).getAttribute('v'));
+                    options[optionId] = value;
+                    localStorage.setItem(optionId, value);
+                }
+
+                localStorage.setItem("fontSize", fontSize);
+
+                const savedOptions = {
+                    "alerts": options.option1,
+                    "show fullscreen btn": options.option2,
+                    "show export btn": options.option3,
+                    "dark mode": options.option4,
+                    "font size": fontSize,
+                    "show line numbers": options.option5,
+                    "auto save / load": options.option6
+                };
+
+                console.log("Options: saved options", savedOptions);
+                showAlert("saved options", 4000, false);
+            } catch (err) {
+                showAlert("error saving options", 4000, false);
+                console.log("error saving options: " + err);
+            }
+        }
+
+
+        function checkForSavedOptions(isReset = false) {
+            const savedOptions = {};
+
+            for (let i = 1; i <= optionCount; i++) {
+                savedOptions[`option${i}`] = localStorage.getItem(`option${i}`);
+            }
+            savedOptions.fontSize = localStorage.getItem("fontSize");
+
+            // !!!! ADD NEW OPTIONS HERE !!!!
+            if (savedOptions.option1 && savedOptions.option2 && savedOptions.option3 && savedOptions.option4 && savedOptions.option5 && savedOptions.option6 && savedOptions.fontSize) {
+                const message = isReset ? "reset options." : "options loaded";
+                showAlert(message, 3000, false);
+            }
+
+            console.log("Options: loading saved options.", savedOptions);
+
+            for (let i = 1; i <= optionCount; i++) {
+                const optionValue = savedOptions[`option${i}`];
+                if (optionValue !== null) {
+                    toggleOption(i, optionValue === "true");
+                }
+            }
+
+            if (savedOptions.fontSize !== null) {
+                monaco.editor.getEditors()[0].updateOptions({ fontSize: savedOptions.fontSize });
+                fontSize = savedOptions.fontSize;
+                document.getElementById("span").innerText = ` Font: ${fontSize} `;
+            }
+        }
+
+
+
+        function toggleOptionMenu() {
+            options = document.getElementById("options-container");
+            if(options.style.display == "block") {
+                options.style.display = "none";
+                //document.getElementById("editorPage").style.display = "none";   
+                output.hidden = false;
+                //showAlert("showing output", 1500, true)  
+                setTimeout(function() {updateOutput(false)}, 750);
+                saveOptions();
+                optionsBtn.innerText = "Options";
+            } else {
+                options.style.display = "block";
+                output.hidden = true;
+                //showAlert("showing options", 1500, true)
+                optionsBtn.innerText = "Close Options";
+            }
+        };
+
+        function toggleOption(option, v=null) {
+
+            // v = value 
+            // for loading previous options, toggleOption(1, true) sets option1 to true   if no value is given it just toggles it
+
+            if(document.getElementById(`option${option}`) == null) {return;} // if option element not found dont try anything
+
+            if(v == null) {
+                // green if enabled / red if disabled
+                if(document.getElementById(`option${option}`).style.color == "green") {
+                    document.getElementById(`option${option}`).style.color = "red";   
+                    document.getElementById(`option${option}`).setAttribute("v", "");
+                } else if(document.getElementById(`option${option}`).style.color == "red"){
+                    document.getElementById(`option${option}`).style.color = "green";
+                    document.getElementById(`option${option}`).setAttribute("v", "true");
+                }
+            } else if(!(v == null)) {
+                if(v == true) {
+                    document.getElementById(`option${option}`).style.color = "green";
+                    document.getElementById(`option${option}`).setAttribute("v", "true");
+                } else if(v == false) {
+                    document.getElementById(`option${option}`).style.color = "red";   
+                    document.getElementById(`option${option}`).setAttribute("v", "");
+                }
+            }
+
+            // code for the options
+
+            if(document.getElementById("option1").getAttribute("v") == "true") {
+                doAlert = true;
+            } else if(document.getElementById("option1").getAttribute("v") == ""){ 
+                doAlert = false;
+            }
+
+            if(document.getElementById("option2").getAttribute("v") == "true") {
+                fullscreenBtn.hidden = false;
+            } else if(document.getElementById("option2").getAttribute("v") == ""){
+                fullscreenBtn.hidden = true;
+            }   
+
+            if(document.getElementById("option3").getAttribute("v") == "true") {
+                exportBtn.hidden = false;
+            } else if(document.getElementById("option3").getAttribute("v") == ""){
+                exportBtn.hidden = true;
+            }
+
+            if(document.getElementById("option4").getAttribute("v") == "true") {
+                monaco.editor.setTheme("vs-dark");
+            } else if(document.getElementById("option4").getAttribute("v") == ""){
+                monaco.editor.setTheme("vs");
+            }
+            
+            if(document.getElementById("option5").getAttribute("v") == "true") {
+                monaco.editor.getEditors()[0].updateOptions({lineNumbers: true})
+            } else if(document.getElementById("option5").getAttribute("v") == "") {
+                monaco.editor.getEditors()[0].updateOptions({lineNumbers: false})
+            }
+
+            if(document.getElementById("option6").getAttribute("v") == "true") {
+                getPreviousFileOnLoad = true;
+                saveCodeOnUpdate = true;
+            } else if(document.getElementById("option6").getAttribute("v") == "") {
+                getPreviousFileOnLoad = false;
+                saveCodeOnUpdate = false;
+            }
+
+        }
+
+        // - Above: Options - Below: CodeSaverLoader -
+        
+        console.log("loaded CodeSaveLoader.")
+
+        if(scriptsLoaded != null) {
+            scriptsLoaded.push("CodeSaverLoader");
+        }
+
+        function savePreviousFile() {
+            try {
+
+                var lastInputFileValue = document.getElementById("monaco-editor").firstChild.firstChild.children[1].innerText;
+                lastInputFileValue = lastInputFileValue.replace(/\u00A0/g, ' ');
+                localStorage.setItem("lastFile", lastInputFileValue);
+                console.log("Saver/Loader: saved code.");
+
+            } catch(err) {
+                
+                console.log("Saver/Loader: error saving code", err);
+
+            }
+        }
+
+        function getPreviousFile() {
+            try {
+                var pF = localStorage.getItem("lastFile");
+                if (pF != null && pF != "") {
+                    setTimeout(function() {
+                        if (editor != null) {
+                            pF = pF.replace(/\u00A0/g, ' ');
+                            editor.setValue(pF);
+                            showAlert("code loaded", 2000, false);
+                            console.log("Saver/Loader: got saved code.");
+                        } 
+                    }, 2000);
+                }
+            } catch(err) {
+                console.log("Saver/Loader: error loading previous code", err)
+            }
+        }
+
+        // - Above: CodeSaverLoader - Below: Export -
+
+        console.log("loaded export.")
+
+
+        if(scriptsLoaded != null) {
+            scriptsLoaded.push("Export")
+        }
+
+
+        const save = (data, filename) => {
+            const blob = new Blob([data], { type: "text/html" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+        };
+
+        function mkExport() {
+            showAlert("attempting to export", 1000, false)
+            console.log("Export: attempting to export")
+            try {
+                var exportCode = document.getElementById("monaco-editor").firstChild.firstChild.children[1].innerText;
+                if(exportCode != "" || String(exportCode) != templateCode) {
+                    console.log("Export: showing save file in os file manager")
+                    save(exportCode, "output.html");
+                } else {
+                    console.log("Export: theres no code to export.")
+                    showAlert("write some code before trying to export!", 3, false);
+                }
+            } catch(err) {
+                if(document.getElementById("monaco-editor").firstChild == null) {      
+                    setTimeout(function() {showAlert("no editor & no code to export.", 2000, false)}, 1100)
+                } else {     
+                    setTimeout(function() {showAlert("Error: cant export code", 2000, false)}, 1100)
+                }
+                console.log("err making export", err)
+            }
+        }
+        // - Above: Export - Below: EventListeners -
+
+        try {
+            setTimeout( function() {
+
+                console.log("loaded event listeners. (delayed purposely)")
+                
+                /*
+                if(scriptsLoaded != null) {
+                    scriptsLoaded.push("EventListeners");
+                }
+                */
+
+                // --- event listeners ---
+
+                document.addEventListener("keydown", function (event) {
+                    try{
+                        if(!(isUsingMonacoEditor)) {return;} 
+                        if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+                            event.preventDefault();
+                            updateOutput();
+                        }
+                    } catch(err) {
+                        //console.log(err)
+                    }
+                });
+
+                document.addEventListener("keydown", function (event) {
+                    try {
+                        if(!(isUsingMonacoEditor)) {return;} 
+                        if (event.key == "Escape") {
+                            event.preventDefault();
+                            toggleOptionMenu();
+                        }
+                    } catch(err) {
+                        //console.log(err)
+                    }
+                });
+
+                setTimeout(function() {
+                    try {
+                        if(!(isUsingMonacoEditor)) {return;}
+                        document.getElementById("output").contentWindow.document.body.addEventListener("keydown", function (event) {
+                            if (event.key == "Escape") {
+                                toggleOptionMenu();
+                            }
+                        });
+                    } catch(err) {
+                        //console.log(err)
+                    }
+
+                }, 5000);
+
+                try {
+                    const fullscreenBtn = document.getElementById('fullscreenBtn');
+                    fullscreenBtn.addEventListener('click', () => {
+                        const isFullscreen = inputContainer.style.display === 'none';
+                        if (isFullscreen) {
+                            inputContainer.style.display = 'flex';
+                            divider.style.display = 'block';
+                            fullscreenBtn.textContent = 'Full Screen';
+                            outputContainer.style.flex = '1';
+                        } else {
+                            inputContainer.style.display = 'none';
+                            divider.style.display = 'none';
+                            fullscreenBtn.textContent = 'Exit Full Screen';
+                            outputContainer.style.flex = 'none';
+                            outputContainer.style.width = '100%';
+                        }
+                    });
+                } catch(err) {
+                    //console.log(err)
+                }
+                // -----------------------
+
+            }, 2000); // setTimeout
+
+        } catch(err) { // main event listeners try catch
+            console.log("EventListeners: err", err)
+        }
+
+        // -------------------------------------------------------------
+
         setTimeout(function() {
             try {
                 if(monaco && monaco.editor != null) {
@@ -551,8 +714,6 @@
                 //console.log(err)
             }
         }
-
-
         
     </script>
 </body>
