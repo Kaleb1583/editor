@@ -1,0 +1,19 @@
+PROBLEMS / ERRORS / BUGS
+
+
+problem: after resetting the editor to default it deletes the current editor, creates a editor with the default code, and then saves the code with savePreviousFile() but document.getElementById("monaco-editor").firstChild.firstChild is unreadable
+
+fix? add timeout so its createEditor -> delay -> savePreviousFile
+
+possible problem: scripts couldnt load
+
+fix? add pre-load functions to check
+
+  if("Missing Monaco Editor") {
+      refreshBtn.onclick="refresh()"; // refresh page button
+      stbeBtn.onclick="switchToBaseEditor()"; // switch to basic editor button
+  } else if(missing.includes("Options") || missing.includes("CodeSaverLoader") || missing.includes("Export")) { // if missing a script that was supposed to load on load
+      retryScriptsLoadBtn.onclick="retryScriptsLoad()"; // try to load scripts again button
+      ContinueWithoutMissingOptions.onclick="continueWithoutMissingOptions()"; // continue without scripts that couldnt be loaded (ex: not having options doesnt affect the monaco editor)
+  }
+
