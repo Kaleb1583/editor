@@ -2,6 +2,12 @@ try {
     setTimeout( function() {
 
         console.log("loaded event listeners. (delayed purposely)")
+        
+        /*
+        if(scriptsLoaded != null) {
+            scriptsLoaded.push("EventListeners");
+        }
+        */
 
         // --- event listeners ---
 
@@ -10,7 +16,7 @@ try {
                 if(!(isUsingMonacoEditor)) {return;} 
                 if ((event.ctrlKey || event.metaKey) && event.key === "s") {
                     event.preventDefault();
-                    toggleOptionMenu();
+                    updateOutput();
                 }
             } catch(err) {
                 //console.log(err)
