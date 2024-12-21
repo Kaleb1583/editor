@@ -1,9 +1,21 @@
 
 IDEAS:
 
-  --- snippets ---
+  --- script(s) -> script loader ---
+  Status: currently adding
+  -
+  removed scripts in header
+  removed functions
+  change script loader from handling all scripts to just monaco
+  moved Options,Export,EventListeners,CodeSaverLoader to index.html so you only need to get monaco
+  ----------------------------------
+
+  --- snippets --- 
+  Status: next to do
+  -
   have btn V 
   have working btn show snippets function X
   have load snippets from local storage X
   have button in snippets menu to save, edit and import code
   ----------------
+
