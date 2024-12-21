@@ -1,4 +1,4 @@
-    console.log("loaded options.")
+a    console.log("loaded options.")
 
     function resetOptions() {
         for (let i = 1; i <= optionCount; i++) {
