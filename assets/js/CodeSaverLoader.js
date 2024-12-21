@@ -1,5 +1,9 @@
 console.log("loaded CodeSaveLoader.")
 
+if(scriptsLoaded != null) {
+    scriptsLoaded.push("CodeSaverLoader");
+}
+
 function savePreviousFile() {
     try {
 
