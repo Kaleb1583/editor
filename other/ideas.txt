@@ -2,7 +2,7 @@
 IDEAS:
 
   --- script(s) -> script loader ---
-  Status: currently adding
+  Status: added.
   -
   removed scripts in header
   removed functions
@@ -11,11 +11,13 @@ IDEAS:
   ----------------------------------
 
   --- snippets --- 
-  Status: next to do
+  Status: working on it
   -
   have btn V 
-  have working btn show snippets function X
-  have load snippets from local storage X
-  have button in snippets menu to save, edit and import code
+  have working btn show snippets function V
+  have load snippets from local storage V
+  have button in snippets menu to save, edit and import code X  have btn(s): edit
+
+  close to being done.
   ----------------
 
