@@ -7,7 +7,7 @@ if your on windows
   or you can use this but this may not as good as some alternatives
 
 if you on chromium (intended os)
-  you can use this if you want to create a website if vscode
+  you can use this if you want to code a website (since vscode.dev has no output)
 
 it may not work! it works locally for me but may not work when forking but kaleb1583.github.io/editor/ seems to be working.
 
