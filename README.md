@@ -22,7 +22,7 @@ clone repo with cmd: git clone https://github.com/kaleb1583/editor
   - /assets/ (monaco editor code)
 
 Or use:
-  kaleb1583.github.io/editor/ 
+  [kaleb1583.github.io/editor/](https://kaleb1583.github.io/editor/)
 
 
 clone/download repo working status: working.
