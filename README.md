@@ -42,7 +42,7 @@ github page woring status: working.
 - Export button
 - Options button
 
-[Preview](https://github.com/Kaleb1583/editor/blob/main/previews/WithMonaco.png)
+[Preview (outdated)](https://github.com/Kaleb1583/editor/blob/main/previews/WithMonaco.png)
 ---
 
 # FileEditorBase
