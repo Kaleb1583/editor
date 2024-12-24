@@ -13,6 +13,20 @@ it may not work! it works locally for me but may not work when forking but kaleb
 
 note: vscode.dev is the best vsc in the browser but is missing the feature to run code
 
+### How to use:
+
+clone repo with cmd: git clone https://github.com/kaleb1583/editor
+(or download the [zip](https://github.com/Kaleb1583/editor/archive/refs/heads/main.zip) and then extract it to a folder then open index.html)
+
+What you need:
+  index.html (monaco editor)
+  HTMLEditor.html (basic editor)
+  /assets/ (monaco editor code)
+
+Or:
+
+kaleb1583.github.io/editor/ status: working.
+
 ### Options:
 - Show alerts
 - Show fullscreen button
@@ -40,15 +54,3 @@ just a textbox and output.
 [Preview](https://github.com/Kaleb1583/editor/blob/main/p/WithoutMonaco.png)
 ---
 
-### How to use:
-
-clone repo with cmd: git clone https://github.com/kaleb1583/editor
-
-What you need:
-  index.html (monaco editor)
-  HTMLEditor.html (basic editor)
-  /assets/ (monaco editor code)
-
-Or:
-
-kaleb1583.github.io/editor/ status: working.
