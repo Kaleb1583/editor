@@ -9,7 +9,7 @@ if your on windows
 if you on chromium (intended os)
   you can use this if you want to create a website if vscode
 
-it may not work! it works locally for me but may not work when forking or when using kaleb1583.github.io/editor/
+it may not work! it works locally for me but may not work when forking but kaleb1583.github.io/editor/ seems to be working.
 
 note: vscode.dev is the best vsc in the browser but is missing the feature to run code
 
@@ -51,4 +51,4 @@ What you need:
 
 Or:
 
-the site: kaleb1583.github.io/editor/ isnt working currently.
+kaleb1583.github.io/editor/ status: working.
