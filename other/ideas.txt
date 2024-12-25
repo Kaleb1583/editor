@@ -11,13 +11,11 @@ IDEAS:
   ----------------------------------
 
   --- snippets --- 
-  Status: working on it
+  Status: added.
   -
   have btn V 
   have working btn show snippets function V
   have load snippets from local storage V
-  have button in snippets menu to save, edit and import code X  have btn(s): edit
-
-  close to being done.
+  have button in snippets menu to save, edit and import code V
   ----------------
 
