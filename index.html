@@ -51,8 +51,6 @@
             <div id="snippet-editor" style="display: none; height: 100%;"></div>
         </div>
 
-        <!-- <div id="divider" style="width: 3px; background-color: #ccc; flex-shrink: 0;"></div> -->
-
         <div id="output-container" style="color: black; background-color:white; width: 50%;">
 
             <iframe id="output"></iframe>
@@ -89,7 +87,8 @@
 
                 <br>
 
-                <button onclick="editSnippet();">Edit Snippet</button>&nbsp;&nbsp;&nbsp;&nbsp;<button onclick="getSnippets()">Refresh</button>&nbsp;&nbsp;&nbsp;&nbsp;<button onclick="createSnippet();">Create Snippet</button>
+                <button id="editSnippetBtn" onclick="editSnippet();">Edit Snippet</button>&nbsp;&nbsp;&nbsp;&nbsp;<button onclick="getSnippets();">Refresh</button>&nbsp;&nbsp;&nbsp;&nbsp;<button onclick="createSnippet();">Create Snippet</button><br>
+                <button id="renameSnippetBtn" onclick="renameSnippet()">Rename Snippet</button> <!--<button onclick="uploadSnippet();">Upload Snippet</button>-->
 
             </div>
 
@@ -343,6 +342,9 @@
                                 enabled: false
                             }        
                         });
+                        editor.onKeyDown((event) => {
+                            showAlert("This snippet is read-only. Click the edit button to modify it!", 3000, true);
+                        });
                     });
                 } catch(err) {
                     err;
@@ -366,7 +368,7 @@
                         showAlert(alertText, 3000, true)
                     });
                 }
-            }
+            } 
         }
 
         setInterval(readOnlyLoop, 3000);
@@ -396,9 +398,9 @@
                         }
                     }
                 }
-                // - for removing snippet from snippets (local storage variable) -
 
-                
+                // - for removing snippet from snippets (local storage variable) -
+        
                 document.getElementById("snippet-editor").innerHTML = `<br><h4>snippet ${snippetName} was deleted...<h4>`;
                 setTimeout(function() {
                     document.getElementById("snippet-editor").innerHTML = "<br><h4>select or create a snippet and it will appear here!<h4>";
@@ -461,6 +463,50 @@
         function uploadSnippet() {
 
         }
+
+        function renameSnippet() {
+
+            var snippetName = document.getElementById("loadedSnippetName").innerText;
+
+            if(snippetName != null) {
+
+                var snippetToRename = localStorage.getItem(snippetName);
+
+                if(snippetToRename != null) {
+
+                    var newName = prompt("new snippet name?")
+
+                    
+                    if(String(snippetToRename).includes(` <!-- {snippet: ${snippetName}} -->`)) {
+                        String(snippetToRename).replace(` <!-- {snippet: ${snippetName} -->`,  ""); 
+                    }
+
+
+                    if(newName!=null) {
+                        deleteASnippet(snippetName);
+                        createSnippet(snippetToRename, String(newName));
+                        showAlert("renamed snippet", 3000, false)
+                    }
+
+                } else {
+                    console.log("snippetToRename == null");
+                }
+
+            } else {
+                console.log("snippetName == null")
+            }
+
+        }
+
+        setInterval(function() {
+            if(document.getElementById("loadedSnippetName") != null) {
+                document.getElementById("editSnippetBtn").hidden = false;    
+                document.getElementById("renameSnippetBtn").hidden = false;
+            } else {
+                document.getElementById("editSnippetBtn").hidden = true;    
+                document.getElementById("renameSnippetBtn").hidden = true;
+            }
+        }, 1250);
 
         function updateSnippetCode() {
             console.log("Code Saver/Loader: saving (snippet) editor code");
@@ -1075,12 +1121,10 @@
                         const isFullscreen = inputContainer.style.display === 'none';
                         if (isFullscreen) {
                             inputContainer.style.display = 'flex';
-                            divider.style.display = 'block';
                             fullscreenBtn.textContent = 'Full Screen';
                             outputContainer.style.flex = '1';
                         } else {
                             inputContainer.style.display = 'none';
-                            divider.style.display = 'none';
                             fullscreenBtn.textContent = 'Exit Full Screen';
                             outputContainer.style.flex = 'none';
                             outputContainer.style.width = '100%';
