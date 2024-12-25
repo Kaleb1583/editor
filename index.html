@@ -51,9 +51,9 @@
             <div id="snippet-editor" style="display: none; height: 100%;"></div>
         </div>
 
-        <div id="divider" style="width: 3px; background-color: #ccc; flex-shrink: 0;"></div>
+        <!-- <div id="divider" style="width: 3px; background-color: #ccc; flex-shrink: 0;"></div> -->
 
-        <div id="output-container" style="width: 50%;">
+        <div id="output-container" style="color: black; background-color:white; width: 50%;">
 
             <iframe id="output"></iframe>
 
@@ -69,7 +69,7 @@
                     <p id="option2" onclick="toggleOption(2)" v="true" style="color: green">Show Fullscreen Button</p>
                     <p id="option3" onclick="toggleOption(3)" v="true" style="color: green">Show Export Button</p>
                     <p id="option7" onclick="toggleOption(7)" v="true" style="color: green">Show Snippets Button</p>
-                    <a href="?doSnow=false">No Snow</a>
+                    <a id="noSnowA" style="color: red; text-decoration: none;" href="?doSnow=false">No Snow</a>
                     <!-- NEW-OPTION-CREATION -->
                     <br><br>
                     <button style="color: white" id="resetMonacoEditorValue" onclick="setMonacoEditorToDefault()">Reset Editor</button>
@@ -372,11 +372,14 @@
         setInterval(readOnlyLoop, 3000);
 
         function deleteASnippet(snippetName) {
+
             console.log("requested to delete snippet '" + snippetName + "'")
 
             const result = window.confirm(`delete snippet ${snippetName}?`);
 
             if(!(result)) {showAlert("canceled deletion.", 3000, false);return;}
+
+            if(snippetName=="Example"){return;}
 
             if(localStorage.getItem(String(snippetName))!=null) {
                 localStorage.removeItem(String(snippetName));
@@ -460,7 +463,26 @@
         }
 
         function updateSnippetCode() {
+            console.log("Code Saver/Loader: saving (snippet) editor code");
+            
+            var me = null;
+            
+            for(m=0; m < monaco.editor.getEditors().length; m++) {
+                if(monaco.editor.getEditors()[m]._domElement.id == "monaco-editor") {   
+                    me = monaco.editor.getEditors()[m];
+                }
+            }
 
+            if(me != null) {
+                if(snippetMovedToEditor != null) {
+                    savePreviousFile();
+                    var snippetName = snippetMovedToEditor;
+                    if(localStorage.getItem(snippetName) != null) {
+                        localStorage.setItem(snippetName, me.getValue());
+                        showAlert("saved code & updated snippet code.")
+                    }
+                }
+            }
         }
 
         function editSnippet() {
@@ -498,10 +520,11 @@
                             console.log("closed snippets")
                         }
                         showAlert(`opened snippet ${snippetName} in editor.`)
-                        console.log(`set monaco editor to value to: ${snippetValue}`)
+                        //console.log(`set monaco editor to value to: ${snippetValue}`)
                         snippetEditor.dispose();
                         console.log("disposed snippet editor")
                         snippetMovedToEditor = snippetName;
+                        updateOutput();
                     } else {
                         console.log("monacoEditor and/or snippetEditor is null")
                     }
@@ -560,6 +583,9 @@
 
         function createEditor(ol) { // ol = onload
             var templateCode = '<!DOCTYPE html>\n<html>\n\n<head>\n    <title>Example</title>\n</head>\n\n<body>\n    <h1>Hello, World!</h1>\n    <p>Write some code!</p>\n</body>\n\n</html>';
+            if(getPreviousFileOnLoad) {
+                templateCode = "";
+            }
             if(ol) {
                 // Monaco Editor (vs code in web)
                     require(['vs/editor/editor.main'], function () {
@@ -592,9 +618,10 @@
         function updateOutput(showAlertOnUpdate = true, save = true) {
             if (isUsingMonacoEditor) {
                 try {
-                    const editor = monaco.editor.getModels()[0];
-                    const code = editor.getValue(); 
-
+                    me = monaco.editor.getEditors()[0];
+                    if(me == null) {return;}
+                    const editor = me;
+                    const code = me.getValue(); 
                     if (code.trim() !== "") {
                         const iframe = document.getElementById("output");
 
@@ -603,7 +630,18 @@
 
                         console.log("Main: updated output.");
 
-                        if(saveCodeOnUpdate && save) { savePreviousFile(); }
+                        if(snippetMovedToEditor != null) {
+
+                            if(saveCodeOnUpdate && save) {
+                                savePreviousFile(); // this saves the code in local storage variable previousFile
+                            }
+
+                            updateSnippetCode() // this saves the code in local storage variable ${snippetName} so for example you load a snippet and then start editing it when saving it will update the snippets code and will show updates in the snippets menu
+
+                        } else {
+                            if(saveCodeOnUpdate && save) { savePreviousFile(); }
+                        }
+
 
                         if (showAlertOnUpdate) {
                             showAlert("updated output", 1000, false);
@@ -611,6 +649,7 @@
                     } else {
                         console.warn("Main: No code to update in iframe.");
                     }
+
                 } catch (error) {
                     console.error("Main: Failed to update iframe output:", error);
                 }
@@ -904,11 +943,19 @@
 
         function savePreviousFile() {
             try {
+                var me = null;
+                for(u=0; u < monaco.editor.getEditors().length; u++) {
+                    if(monaco.editor.getEditors()[u]._domElement == document.getElementById("monaco-editor")) {
+                        me = monaco.editor.getEditors()[u];
+                    }
+                }
 
-                var lastInputFileValue = document.getElementById("monaco-editor").firstChild.firstChild.children[1].innerText;
-                //  lastInputFileValue = lastInputFileValue.replace(/\u00A0/g, ' ');
-                localStorage.setItem("lastFile", lastInputFileValue);
-                console.log("Saver/Loader: saved code.");
+                if(me != null) {
+                    var lastInputFileValue = me.getValue();
+                    //  lastInputFileValue = lastInputFileValue.replace(/\u00A0/g, ' ');
+                    localStorage.setItem("lastFile", lastInputFileValue);
+                    console.log("Saver/Loader: saved code.");
+                } 
 
             } catch(err) {
                 
@@ -1064,7 +1111,7 @@
 
         setTimeout(function() {
             updateOutput(false, false)
-        }, 1500);
+        }, 3000);
 
         
         if(getPreviousFileOnLoad) {
@@ -1082,12 +1129,17 @@
             }
         }
         
+        // below snow overlay stuff below
+
         try {
             function doSnowCheck() {
                 var doSnow = params.get("doSnow");
 
                 if(doSnow == "false") {
                     console.log("parameter doSnow is false so snow wont start.")
+                    document.getElementById("noSnowA").setAttribute("href", window.location.href.replace("?doSnow=false", ""));
+                    document.getElementById("noSnowA").setAttribute("style", "color: green; text-decoration: none;");
+                    document.getElementById("noSnowA").innerText = "No Snow";
                 } else {
                     startSnowLoop();
                 }
@@ -1149,7 +1201,7 @@
                 }
             }
         } catch (err) {
-            console.log("Couldn't load Christmas s.o!", err);
+            console.log("Couldn't load christmas snow overlay!", err);
         }
 
 
