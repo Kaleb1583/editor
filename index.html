@@ -8,7 +8,7 @@
 
     <!-- css stylesheets -->
     <link rel="stylesheet" href="./assets/css/styles.css"> <!-- main css for editor -->
-    <link rel="stylesheet" href="./assets/css/so.css">
+    <link rel="stylesheet" href="./assets/css/so.css"> <!-- christmas snow overlay -->
     <!-- end of css -->
 
     <noscript>
@@ -79,7 +79,7 @@
 
             </div>
 
-            <div id="snippets-container" style="display: none">
+            <div id="snippets-container" style="display: none; height: 95%; overflow-y: auto;">
 
                 <h4>Snippets</h4>
 
@@ -87,9 +87,11 @@
 
                 <br>
 
-                <button id="editSnippetBtn" onclick="editSnippet();">Edit Snippet</button>&nbsp;&nbsp;&nbsp;&nbsp;<button onclick="getSnippets();">Refresh</button>&nbsp;&nbsp;&nbsp;&nbsp;<button onclick="createSnippet();">Create Snippet</button><br>
-                <button id="renameSnippetBtn" onclick="renameSnippet()">Rename Snippet</button> <!--<button onclick="uploadSnippet();">Upload Snippet</button>-->
-
+                <div id="snippetButtonContainer">
+                    <button id="editSnippetBtn" onclick="editSnippet();">Edit Snippet</button><button onclick="getSnippets();">Refresh</button><button onclick="createSnippet();">Create Snippet</button><br>
+                    <button id="renameSnippetBtn" onclick="renameSnippet()">Rename Snippet</button> <button  id="closeSnippetBtn" onclick="closeSnippet();">Close Snippet</button><button onclick="uploadSnippet();">Upload Snippet</button>
+                </div>
+                
             </div>
 
         </div>
@@ -114,7 +116,7 @@
         var canUseMonaco = false; // for loading monaco
         var isOptionsOpen = false;  // for preventing snippets from opening if options is open
         var isSnippetsOpen = false;  // for preventing options from opening if snippets is open
-        var snippetMovedToEditor = null;
+        var snippetMovedToEditor = null; // this is for storing what snippet was last loaded into the main editor from the snippet editor
         
         // ctrl+f "NEW-OPTION-CREATION" to find all things needed to be updated after creating a new option
 
@@ -210,6 +212,7 @@
                 document.getElementById("snippetsBtn").innerText = "Snippets";
             } else {
                 // show snippets
+                updateOutput();
                 isSnippetsOpen = true;
                 snippetContainer.style.display = "block"; // show snippets
                 document.getElementById("options-container").style.display = "none"; // hide options 
@@ -311,12 +314,11 @@
 
         }
 
-
         function getASnippet(snippetName) {
 
-            for(c=0; c < monaco.editor.getEditors().length; c++) {
-                    if(monaco.editor.getEditors()[c]._domElement.id == "snippet-editor") {
-                        monaco.editor.getEditors()[c].dispose(); // dispose all snippet editors when making a new snippet editor
+            for(o=0; o < monaco.editor.getEditors().length; o++) {
+                    if(monaco.editor.getEditors()[o]._domElement.id == "snippet-editor") {
+                        monaco.editor.getEditors()[o].dispose(); // dispose all snippet editors when making a new snippet editor
                     }
                 }
 
@@ -358,13 +360,7 @@
             for(q=0; q < editors.length; q++) {
                 if(editors[q]._domElement.id == "snippet-editor") {
                     editors[q].onKeyDown((event) => {
-                        console.log(`User tried to type: "${event.browserEvent.key}"`);
                         var alertText = "click edit button to edit the snippet!";
-                        for(y=0; y < document.getElementById("alert-container"); y++) {
-                            if(document.getElementById("alert-container").children[y].innerText == alertText) {
-                                //document.getElementById("alert-container").children[y].remove();
-                            }
-                        }
                         showAlert(alertText, 3000, true)
                     });
                 }
@@ -407,6 +403,26 @@
                 }, 2600);
 
                 getSnippets();
+            }
+        }
+
+        function closeSnippet() {
+            try {
+                for(l=0; l < monaco.editor.getEditors().length; l++) {
+                    if(monaco.editor.getEditors()[l]._domElement == document.getElementById("snippet-editor")) {
+                        monaco.editor.getEditors()[l].dispose(); // dispose all snippet editors on snippet menu close
+                    }
+                }
+                
+                var snippetName = document.getElementById("loadedSnippetName").innerText;
+                document.getElementById("snippet-editor").innerHTML = `<br><h4>closed snippet ${snippetName}<h4>`;
+                setTimeout(function() {
+                    document.getElementById("snippet-editor").innerHTML = "<br><h4>select or create a snippet and it will appear here!<h4>";
+                }, 2600);
+            } catch(err) {
+                if(String(err).includes("TypeError: Cannot read properties of null (reading 'innerText')")) {
+                    showAlert("no snippet open to hide.") // handle loadedSnippetName being null (no loadedSnippetName = no snippet open)
+                }
             }
         }
 
@@ -460,8 +476,56 @@
             }
         }
 
-        function uploadSnippet() {
+        function getFile() {
+            return new Promise((resolve, reject) => {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.style.display = 'none';
+                document.body.appendChild(fileInput);
+                fileInput.addEventListener('change', () => {
+                    const file = fileInput.files[0];
+                    document.body.removeChild(fileInput);
+                    if (file) {
+                        resolve(file);
+                    } else {
+                        reject(new Error('No file selected.'));
+                    }
+                });
+                fileInput.click();
+            });
+        }
 
+        function readFileContent(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file);
+            });
+        }
+              
+        function uploadSnippet() {
+            try {
+                (async function () {
+                    try {
+                        const file = await getFile(); 
+                        const content = await readFileContent(file);
+                        //console.log('File Content:', content);
+                        if(String(file.name).includes(".html")) {
+                            createSnippet(content, String(file.name).replace(".html", ""));
+                            showAlert("created snippet with file", 4000, false);
+                        } else {
+                            showAlert("select a html file!", 4000, false);
+                        }
+                    } catch (err) {
+                        console.error(err.message);
+                        showAlert("cant upload snippet!", 4000, false);
+                    }
+                })();
+            } catch(err) {
+                console.log(err);
+                showAlert("cant upload snippet!", 4000, false);
+            }
         }
 
         function renameSnippet() {
@@ -470,17 +534,17 @@
 
             if(snippetName != null) {
 
+                if(snippetName == "Example") {return;}
+
                 var snippetToRename = localStorage.getItem(snippetName);
 
                 if(snippetToRename != null) {
 
                     var newName = prompt("new snippet name?")
-
-                    
+    
                     if(String(snippetToRename).includes(` <!-- {snippet: ${snippetName}} -->`)) {
                         String(snippetToRename).replace(` <!-- {snippet: ${snippetName} -->`,  ""); 
                     }
-
 
                     if(newName!=null) {
                         deleteASnippet(snippetName);
@@ -493,20 +557,23 @@
                 }
 
             } else {
-                console.log("snippetName == null")
+                console.log("snippetName == null");
             }
 
         }
 
         setInterval(function() {
             if(document.getElementById("loadedSnippetName") != null) {
-                document.getElementById("editSnippetBtn").hidden = false;    
                 document.getElementById("renameSnippetBtn").hidden = false;
+                if(document.getElementById("loadedSnippetName").innerText == "Example") {document.getElementById("renameSnippetBtn").hidden = true;}
+                document.getElementById("editSnippetBtn").hidden = false;  
+                document.getElementById("closeSnippetBtn").hidden = false;
             } else {
                 document.getElementById("editSnippetBtn").hidden = true;    
                 document.getElementById("renameSnippetBtn").hidden = true;
+                document.getElementById("closeSnippetBtn").hidden = true;
             }
-        }, 1250);
+        }, 0);
 
         function updateSnippetCode() {
             console.log("Code Saver/Loader: saving (snippet) editor code");
@@ -523,12 +590,22 @@
                 if(snippetMovedToEditor != null) {
                     savePreviousFile();
                     var snippetName = snippetMovedToEditor;
+                    if(snippetName == "Example") {return;}
                     if(localStorage.getItem(snippetName) != null) {
                         localStorage.setItem(snippetName, me.getValue());
                         showAlert("saved code & updated snippet code.")
                     }
                 }
             }
+        }
+
+        function deleteAllSnippets() { // (besides example)
+        
+        }
+
+        function monacoToSnippetEditor() {
+
+
         }
 
         function editSnippet() {
@@ -546,11 +623,11 @@
 
                 if(snippetValue != null) {
                     
-                    for(m=0; m < monaco.editor.getEditors().length; m++) {
-                        if(monaco.editor.getEditors()[m]._domElement.id == "monaco-editor") {   
-                            monacoEditor = monaco.editor.getEditors()[m];
-                        } else if(monaco.editor.getEditors()[m]._domElement.id == "snippet-editor") {
-                            snippetEditor = monaco.editor.getEditors()[m];
+                    for(t=0; t < monaco.editor.getEditors().length; t++) {
+                        if(monaco.editor.getEditors()[t]._domElement.id == "monaco-editor") {   
+                            monacoEditor = monaco.editor.getEditors()[t];
+                        } else if(monaco.editor.getEditors()[t]._domElement.id == "snippet-editor") {
+                            snippetEditor = monaco.editor.getEditors()[t];
                         }
                     }
 
@@ -1247,7 +1324,6 @@
         } catch (err) {
             console.log("Couldn't load christmas snow overlay!", err);
         }
-
 
     </script>
 
