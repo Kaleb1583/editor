@@ -17,5 +17,10 @@ IDEAS:
   have working btn show snippets function V
   have load snippets from local storage V
   have button in snippets menu to save, edit and import code V
+  -
+  snippet ideas:
+    upload/import snippet (html file) (any html file or one exported from the editor)
+    close snippet (btn shows if theres one open)
+    create snippet with code from main monaco editor
   ----------------
 
