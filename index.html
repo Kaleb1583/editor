@@ -91,7 +91,7 @@
                     <button id="editSnippetBtn" onclick="editSnippet();">Edit Snippet</button><button onclick="getSnippets();">Refresh</button><button onclick="createSnippet();">Create Snippet</button><br>
                     <button id="renameSnippetBtn" onclick="renameSnippet()">Rename Snippet</button> <button  id="closeSnippetBtn" onclick="closeSnippet();">Close Snippet</button><button onclick="uploadSnippet();">Upload Snippet</button>
                 </div>
-                
+
             </div>
 
         </div>
@@ -360,7 +360,7 @@
             for(q=0; q < editors.length; q++) {
                 if(editors[q]._domElement.id == "snippet-editor") {
                     editors[q].onKeyDown((event) => {
-                        var alertText = "click edit button to edit the snippet!";
+                        var alertText = "click edit snippet button to edit";
                         showAlert(alertText, 3000, true)
                     });
                 }
