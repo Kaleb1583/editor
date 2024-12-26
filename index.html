@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monaco HTML Editor (gh)</title>
+    <title>Monaco HTML Editor</title>
 
     <!-- css stylesheets -->
     <link rel="stylesheet" href="./assets/css/styles.css"> <!-- main css for editor -->
@@ -22,15 +22,6 @@
 
     <script> // before loading / importing
         var scriptsLoaded = []; // scripts below use this variable so its needs to be defined before the scripts run.
-        
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
     </script>
 
     <!-- scripts -->
@@ -103,6 +94,36 @@
 
             </div>
 
+            <div id="shareMenu">
+
+                <h4>Share/Receive Code Menu</h4>
+
+                <div id="shareMenuShareDiv" style="display: none;">
+
+                    <h5>Share/Receive -> Share</h5>
+
+                    <button onclick="shareMenuShareCodeFromEditor()">Share code in editor</button>
+                    <button onclick="shareMenuShareCodeFromSnippet()">Share code from snippet</button>
+
+                    <button onclick="shareMenuShareBack()">Back</button>
+                </div>
+                
+                <div id="shareMenuReceiveDiv" style="display: none;">
+
+                    <h5>Share/Receive -> Receive</h5>
+            
+                    <span>Share URL:</span><input></input>
+                    <button>open code</button>
+                    
+                    <button onclick="shareMenuReceiveBack()">Back</button>
+
+                </div>
+
+                <button onclick="shareMenuShare()">I want to share my code!</button>
+                <button onclick="shareMenuReceive()">I want to get someone elses code!</button>
+
+            </div>
+
         </div>
     </div>
 
@@ -129,43 +150,12 @@
         
         // ctrl+f "NEW-OPTION-CREATION" to find all things needed to be updated after creating a new option
 
-
-        setInterval(() => {
-            const editorContent = editor.getValue();
-            localStorage.setItem('autosaveContent', editorContent);
-            console.log('Content autosaved!');
-        }, 5000); // Save every 5 seconds
-
         if(localStorage.getItem("snippets") == null) {
             var templateCode = '<!DOCTYPE html>\n<html>\n\n<head>\n    <title>Example</title>\n</head>\n\n<body>\n    <h1>Hello, World!</h1>\n    <p>Write some code!</p>\n</body>\n\n</html>';
             localStorage.setItem("snippets", "Example");
             localStorage.setItem("Example", templateCode);
         }
 
-        function shareSnippet() {
-            const snippetContent = monaco.editor.getEditors()[0].getValue(); 
-            const encodedSnippet = encodeURIComponent(snippetContent); 
-            const shareableLink = `${window.location.origin}${window.location.pathname}?snippet=${encodedSnippet}`;
-
-            navigator.clipboard.writeText(shareableLink).then(() => {
-                alert('Link copied to clipboard!');
-            }).catch(err => {
-                console.error('Failed to copy link:', err);
-            });
-        }
-    
-        document.getElementById('shareSnippet').addEventListener('click', shareSnippet);
-    
-        function loadSnippetFromURL() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const snippet = urlParams.get('snippet');
-            if (snippet) {
-                const decodedSnippet = decodeURIComponent(snippet); 
-                monaco.editor.getEditors()[0].setValue(decodedSnippet);
-            }
-        }
-    
-        setInterval(loadSnippetFromURL, 3000);
 
         const url = new URL(window.location.href);
         const params = new URLSearchParams(url.search);
@@ -410,6 +400,15 @@
 
         setInterval(readOnlyLoop, 3000);
 
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         function deleteASnippet(snippetName) {
 
             console.log("requested to delete snippet '" + snippetName + "'")
@@ -456,7 +455,7 @@
                 }
                 
                 var snippetName = document.getElementById("loadedSnippetName").innerText;
-                document.getElementById("snippet-editor").innerHTML = `<br><h4>closed snippet ${escapeHtml(snippetName)}<h4>`;
+                document.getElementById("snippet-editor").innerHTML = `<br><h4>closed snippet ${snippetName}<h4>`;
                 setTimeout(function() {
                     document.getElementById("snippet-editor").innerHTML = "<br><h4>select or create a snippet and it will appear here!<h4>";
                 }, 2600);
@@ -466,7 +465,6 @@
                 }
             }
         }
-
 
         function isValidSnippetName(name) {
             const invalidChars = /[<>:"/\\|?*\s]/; 
@@ -704,15 +702,46 @@
         // Share / Receive Code Snippets
             function openShareMenu() {
                 
-                if(isSnippetsOpen) {
-                    
-                }
+                if(isSnippetsOpen){showAlert("Close snippets first.", 4000, false);return;}
+                if(isOptionsOpen){showAlert("Close options first.", 4000, false);return;}
 
-                if(isOptionOpen) {
+                var shareMenu = document.getElementById("shareMenu");
 
+                if(shareMenu.style.display == "block") {
+                    shareMenu.style.display = "none";
+                    document.getElementById("shareBtn").innerText = "Share";
+                } else {
+                    shareMenu.style.display = "block";
+                    document.getElementById("shareBtn").innerText = "Close Share Menu";
                 }
 
             } 
+
+            
+            function shareSnippet() {
+                const snippetContent = monaco.editor.getEditors()[0].getValue(); 
+                const encodedSnippet = encodeURIComponent(snippetContent); 
+                const shareableLink = `${window.location.origin}${window.location.pathname}?snippet=${encodedSnippet}`;
+
+                navigator.clipboard.writeText(shareableLink).then(() => {
+                    alert('Link copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy link:', err);
+                });
+            }
+
+            function loadSnippetFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const snippet = urlParams.get('snippet');
+                if (snippet) {
+                    const decodedSnippet = decodeURIComponent(snippet); 
+                    monaco.editor.getEditors()[0].setValue(decodedSnippet);
+                }
+            }
+            
+            document.getElementById('shareBtn').addEventListener('click', openShareMenu);
+            setInterval(loadSnippetFromURL, 3000);
+
         // ----------------------------- (end of share code)
 
         function setMonacoEditorToDefault() {
@@ -928,7 +957,7 @@
 
         }
 
-        //  ----------------- SCRIPTS MOVED BACK INTO HTML  ----------------- 
+        //  ----------------- SEPERATE JS FILES/SCRIPTS MOVED BACK INTO HTML  ----------------- 
         console.log("loaded options.")
 
         function resetOptions() {
