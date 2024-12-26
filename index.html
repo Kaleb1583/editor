@@ -48,7 +48,6 @@
 
         <header id="header" class="top-bar">
             <div id="buttons">
-                <button style="color: white" id="shareBtn" onclick="openShareMenu()">Share</button>
                 <button style="color: white" id="snippetsBtn" onclick="openSnippets()">Snippets</button>
                 <button style="color: white" id="fullscreenBtn">Full Screen</button>
                 <button style="color: white" id="exportBtn" onclick="mkExport()">Export</button>
@@ -104,35 +103,6 @@
 
             </div>
 
-            <div id="shareMenu">
-
-                <h4>Share/Receive Code Menu</h4>
-
-                <div id="shareMenuShareDiv" style="display: none;">
-
-                    <h5>Share/Receive -> Share</h5>
-
-                    <button onclick="shareMenuShareCodeFromEditor()">Share code in editor</button>
-                    <button onclick="shareMenuShareCodeFromSnippet()">Share code from snippet</button>
-
-                    <button onclick="shareMenuShareBack()">Back</button>
-                </div>
-                
-                <div id="shareMenuReceiveDiv" style="display: none;">
-
-                    <h5>Share/Receive -> Receive</h5>
-            
-                    <span>Share URL:</span><input></input>
-                    <button>open code</button>
-                    
-                    <button onclick="shareMenuReceiveBack()">Back</button>
-
-                </div>
-
-                <button onclick="shareMenuShare()">I want to share my code!</button>
-                <button onclick="shareMenuReceive()">I want to get someone elses code!</button>
-
-            </div>
 
         </div>
     </div>
