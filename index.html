@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monaco HTML Editor (github.io)</title>
+    <title>Monaco HTML Editor (gh)</title>
 
     <!-- css stylesheets -->
     <link rel="stylesheet" href="./assets/css/styles.css"> <!-- main css for editor -->
@@ -32,13 +32,13 @@
 
 <body class="body">
 
-
     <div id="alert-container"></div>
 
     <div id="editor-container" class="editor-container">
 
         <header id="header" class="top-bar">
             <div id="buttons">
+                <button style="color: white" id="shareBtn" onclick="openShareMenu()">Share</button>
                 <button style="color: white" id="snippetsBtn" onclick="openSnippets()">Snippets</button>
                 <button style="color: white" id="fullscreenBtn">Full Screen</button>
                 <button style="color: white" id="exportBtn" onclick="mkExport()">Export</button>
@@ -120,11 +120,43 @@
         
         // ctrl+f "NEW-OPTION-CREATION" to find all things needed to be updated after creating a new option
 
+
+        setInterval(() => {
+            const editorContent = editor.getValue();
+            localStorage.setItem('autosaveContent', editorContent);
+            console.log('Content autosaved!');
+        }, 5000); // Save every 5 seconds
+
         if(localStorage.getItem("snippets") == null) {
             var templateCode = '<!DOCTYPE html>\n<html>\n\n<head>\n    <title>Example</title>\n</head>\n\n<body>\n    <h1>Hello, World!</h1>\n    <p>Write some code!</p>\n</body>\n\n</html>';
             localStorage.setItem("snippets", "Example");
             localStorage.setItem("Example", templateCode);
         }
+
+        function shareSnippet() {
+            const snippetContent = monaco.editor.getEditors()[0].getValue(); 
+            const encodedSnippet = encodeURIComponent(snippetContent); 
+            const shareableLink = `${window.location.origin}${window.location.pathname}?snippet=${encodedSnippet}`;
+
+            navigator.clipboard.writeText(shareableLink).then(() => {
+                alert('Link copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy link:', err);
+            });
+        }
+    
+        document.getElementById('shareSnippet').addEventListener('click', shareSnippet);
+    
+        function loadSnippetFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const snippet = urlParams.get('snippet');
+            if (snippet) {
+                const decodedSnippet = decodeURIComponent(snippet); 
+                monaco.editor.getEditors()[0].setValue(decodedSnippet);
+            }
+        }
+    
+        setInterval(loadSnippetFromURL, 3000);
 
         const url = new URL(window.location.href);
         const params = new URLSearchParams(url.search);
@@ -345,7 +377,7 @@
                             }        
                         });
                         editor.onKeyDown((event) => {
-                            showAlert("This snippet is read-only. Click the edit button to modify it!", 3000, true);
+                            showAlert("the snippet editor is read-only!", 3000, true);
                         });
                     });
                 } catch(err) {
@@ -599,13 +631,8 @@
             }
         }
 
-        function deleteAllSnippets() { // (besides example)
+        function deleteAllSnippets() { // (besides example snippet)
         
-        }
-
-        function monacoToSnippetEditor() {
-
-
         }
 
         function editSnippet() {
@@ -662,7 +689,21 @@
 
         }
 
-        // ------------------
+        // ------------------ (end of snippet code)
+
+        // Share / Receive Code Snippets
+            function openShareMenu() {
+                
+                if(isSnippetsOpen) {
+                    
+                }
+
+                if(isOptionOpen) {
+
+                }
+
+            } 
+        // ----------------------------- (end of share code)
 
         function setMonacoEditorToDefault() {
             
@@ -916,7 +957,7 @@
                     "font size": fontSize,
                     "show line numbers": options.option5,
                     "auto save / load": options.option6,
-                    "show snippets btn": options.option7
+                    "show snippets btn": options.option7,
                     // NEW-OPTION-CREATION
 
                 };
