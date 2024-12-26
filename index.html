@@ -316,18 +316,34 @@
                     if(selectedSnippetValue == "") { // (!(selectedSnippetValue.includes("<html>")) && !(selectedSnippetValue.includes("</html>")))
                         console.log(`${selectedSnippet} is an empty snippet`)
                         var emptySnippetText = document.createElement("b");
-                        emptySnippetText.innerHTML = `<span onclick='getASnippet("${selectedSnippet}")'>${selectedSnippet}.html (Empty)</span>&nbsp;&nbsp;|&nbsp;&nbsp;<span onclick='deleteASnippet("${selectedSnippet}")' style='color: red;'>[Delete]</span><br>`;
-                        //emptySnippetText.setAttribute("onclick",`getASnippet('${selectedSnippet}')`); 
+                        var emptySnippetSpan = document.createElement("span");
+                        emptySnippetSpan.textContent = `${selectedSnippet}.html (Empty)`;
+                        emptySnippetSpan.setAttribute("onclick", `getASnippet("${selectedSnippet}")`);
+                        var deleteSpan = document.createElement("span");
+                        deleteSpan.textContent = "[Delete]";
+                        deleteSpan.setAttribute("onclick", `deleteASnippet("${selectedSnippet}")`);
+                        deleteSpan.style.color = "red";
+                        emptySnippetText.appendChild(emptySnippetSpan);
+                        emptySnippetText.appendChild(document.createTextNode(" | "));
+                        emptySnippetText.appendChild(deleteSpan);
+                        emptySnippetText.appendChild(document.createElement("br"));
                         elements.push(emptySnippetText);
                     } else {
                         console.log(`got snippet '${selectedSnippet}'.`)
                         var snippetText = document.createElement("b");
-                        if(selectedSnippet == "Example") { 
-                            snippetText.innerHTML = `<span onclick='getASnippet("${selectedSnippet}")'>${selectedSnippet}</span><br>`;
-                        } else {
-                            snippetText.innerHTML = `<span onclick='getASnippet("${selectedSnippet}")'>${selectedSnippet}.html</span>&nbsp;&nbsp;|&nbsp;&nbsp;<span onclick='deleteASnippet("${selectedSnippet}")' style='color: red;'>[Delete]</span><br>`;
+                        var snippetSpan = document.createElement("span");
+                        snippetSpan.textContent = selectedSnippet;
+                        snippetSpan.setAttribute("onclick", `getASnippet("${selectedSnippet}")`);
+                        snippetText.appendChild(snippetSpan);
+                        if(selectedSnippet != "Example") {
+                            var deleteSpan = document.createElement("span");
+                            deleteSpan.textContent = "[Delete]";
+                            deleteSpan.setAttribute("onclick", `deleteASnippet("${selectedSnippet}")`);
+                            deleteSpan.style.color = "red";
+                            snippetText.appendChild(document.createTextNode(" | "));
+                            snippetText.appendChild(deleteSpan);
                         }
-                        //snippetText.setAttribute("onclick",`getASnippet('${selectedSnippet}')`); 
+                        snippetText.appendChild(document.createElement("br"));
                         elements.push(snippetText);
                     }
 
