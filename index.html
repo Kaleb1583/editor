@@ -22,6 +22,15 @@
 
     <script> // before loading / importing
         var scriptsLoaded = []; // scripts below use this variable so its needs to be defined before the scripts run.
+        
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
     </script>
 
     <!-- scripts -->
@@ -429,7 +438,7 @@
 
                 // - for removing snippet from snippets (local storage variable) -
         
-                document.getElementById("snippet-editor").innerHTML = `<br><h4>snippet ${snippetName} was deleted...<h4>`;
+                document.getElementById("snippet-editor").innerHTML = `<br><h4>snippet ${escapeHtml(snippetName)} was deleted...<h4>`;
                 setTimeout(function() {
                     document.getElementById("snippet-editor").innerHTML = "<br><h4>select or create a snippet and it will appear here!<h4>";
                 }, 2600);
@@ -447,7 +456,7 @@
                 }
                 
                 var snippetName = document.getElementById("loadedSnippetName").innerText;
-                document.getElementById("snippet-editor").innerHTML = `<br><h4>closed snippet ${snippetName}<h4>`;
+                document.getElementById("snippet-editor").innerHTML = `<br><h4>closed snippet ${escapeHtml(snippetName)}<h4>`;
                 setTimeout(function() {
                     document.getElementById("snippet-editor").innerHTML = "<br><h4>select or create a snippet and it will appear here!<h4>";
                 }, 2600);
@@ -457,6 +466,7 @@
                 }
             }
         }
+
 
         function isValidSnippetName(name) {
             const invalidChars = /[<>:"/\\|?*\s]/; 
