@@ -22,6 +22,16 @@
 
     <script> // before loading / importing
         var scriptsLoaded = []; // scripts below use this variable so its needs to be defined before the scripts run.
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
     </script>
 
     <!-- scripts -->
@@ -284,15 +294,15 @@
                     var selectedSnippetValue = localStorage.getItem(String(selectedSnippet));
 
                     if(selectedSnippetValue == null) {
-                        console.log(`snippet '${selectedSnippet}' at index: ${f} is null, deleted.`);
+                        console.log(`snippet '${escapeHtml(selectedSnippet)}' at index: ${f} is null, deleted.`);
                         var before = localStorage.getItem("snippets");
                         if(before.includes("," + selectedSnippet)) {
                             var after = before.replace(","+selectedSnippet, "");
-                            console.log(`removing ',${selectedSnippet}' from snippets.`)
+                            console.log(`removing ',${escapeHtml(selectedSnippet)}' from snippets.`)
                             localStorage.setItem("snippets", after);
                         } else if(before.includes(selectedSnippet)) {
                             var after = before.replace(selectedSnippet, "");
-                            console.log(`removing '${selectedSnippet}' from snippets.`)
+                            console.log(`removing '${escapeHtml(selectedSnippet)}' from snippets.`)
                             localStorage.setItem("snippets", after);
 
                         } else {
@@ -304,20 +314,19 @@
                     }
 
                     if(selectedSnippetValue == "") { // (!(selectedSnippetValue.includes("<html>")) && !(selectedSnippetValue.includes("</html>")))
-                        console.log(`${selectedSnippet} is an empty snippet`)
+                        console.log(`${escapeHtml(selectedSnippet)} is an empty snippet`)
                         var emptySnippetText = document.createElement("b");
-                        emptySnippetText.innerHTML = `<span onclick='getASnippet("${selectedSnippet}")'>${selectedSnippet}.html (Empty)</span>&nbsp;&nbsp;|&nbsp;&nbsp;<span onclick='deleteASnippet("${selectedSnippet}")' style='color: red;'>[Delete]</span><br>`;
-                        //emptySnippetText.setAttribute("onclick",`getASnippet('${selectedSnippet}')`); 
+                        emptySnippetText.innerHTML = `<span onclick='getASnippet("${escapeHtml(selectedSnippet)}")'>${escapeHtml(selectedSnippet)}.html (Empty)</span>&nbsp;&nbsp;|&nbsp;&nbsp;<span onclick='deleteASnippet("${escapeHtml(selectedSnippet)}")' style='color: red;'>[Delete]</span><br>`;
+                        //emptySnippetText.setAttribute("onclick",`getASnippet('${escapeHtml(selectedSnippet)}')`); 
                         elements.push(emptySnippetText);
                     } else {
-                        console.log(`got snippet '${selectedSnippet}'.`)
+                        console.log(`got snippet '${escapeHtml(selectedSnippet)}'.`)
                         var snippetText = document.createElement("b");
                         if(selectedSnippet == "Example") { 
-                            snippetText.innerHTML = `<span onclick='getASnippet("${selectedSnippet}")'>${selectedSnippet}</span><br>`;
+                            snippetText.innerHTML = `<span onclick='getASnippet("${escapeHtml(selectedSnippet)}")'>${escapeHtml(selectedSnippet)}</span><br>`;
                         } else {
-                            snippetText.innerHTML = `<span onclick='getASnippet("${selectedSnippet}")'>${selectedSnippet}.html</span>&nbsp;&nbsp;|&nbsp;&nbsp;<span onclick='deleteASnippet("${selectedSnippet}")' style='color: red;'>[Delete]</span><br>`;
+                            snippetText.innerHTML = `<span onclick='getASnippet("${escapeHtml(selectedSnippet)}")'>${escapeHtml(selectedSnippet)}.html</span>&nbsp;&nbsp;|&nbsp;&nbsp;<span onclick='deleteASnippet("${escapeHtml(selectedSnippet)}")' style='color: red;'>[Delete]</span><br>`;
                         }
-                        //snippetText.setAttribute("onclick",`getASnippet('${selectedSnippet}')`); 
                         elements.push(snippetText);
                     }
 
@@ -364,7 +373,7 @@
                                 h.dispose(); // delete any old editor made through the snippet menu
                             }
                         }
-                        document.getElementById("snippet-editor").innerHTML = "Snippet Loaded: <span id='loadedSnippetName'>" + snippetName + "</span>";
+                        document.getElementById("snippet-editor").innerHTML = "Snippet Loaded: <span id='loadedSnippetName'>" + escapeHtml(snippetName) + "</span>";
                         editor = monaco.editor.create(document.getElementById('snippet-editor'), {
                             value: String(gottenSnippet),
                             language: 'html',
@@ -399,15 +408,6 @@
         }
 
         setInterval(readOnlyLoop, 3000);
-
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
 
         function deleteASnippet(snippetName) {
 
@@ -455,7 +455,7 @@
                 }
                 
                 var snippetName = document.getElementById("loadedSnippetName").innerText;
-                document.getElementById("snippet-editor").innerHTML = `<br><h4>closed snippet ${snippetName}<h4>`;
+                document.getElementById("snippet-editor").innerHTML = `<br><h4>closed snippet ${escapeHtml(snippetName)}<h4>`;
                 setTimeout(function() {
                     document.getElementById("snippet-editor").innerHTML = "<br><h4>select or create a snippet and it will appear here!<h4>";
                 }, 2600);
