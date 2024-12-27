@@ -12,6 +12,9 @@ if you on chromium (intended os)
 note: vscode.dev is the best vsc in the browser but is missing the feature to run code
 
 ### How to use:
+ [kaleb1583.github.io/editor/](https://kaleb1583.github.io/editor/)
+
+or:
 
 clone repo with cmd: git clone https://github.com/kaleb1583/editor
 (or download the [zip](https://github.com/Kaleb1583/editor/archive/refs/heads/main.zip) and then extract it to a folder then open index.html)
@@ -21,12 +24,10 @@ clone repo with cmd: git clone https://github.com/kaleb1583/editor
   - HTMLEditor.html (basic editor)
   - /assets/ (monaco editor code)
 
-Or use:
-  [kaleb1583.github.io/editor/](https://kaleb1583.github.io/editor/)
-
 
 clone/download repo working status: working.
 github page woring status: working.
+
 
 ### Options:
 - Show alerts
