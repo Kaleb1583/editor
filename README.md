@@ -28,30 +28,16 @@ clone repo with cmd: git clone https://github.com/kaleb1583/editor
 locally running status: working.
 github page status: working.
 
-
-### Options:
-- Show alerts
-- Show fullscreen button
-- Show export button
-- Dark mode
-- Monaco font adjuster
-- switch to basic editor (FileEditorBase.html in FileEditor.html)
-- Reset options
-
-### Buttons:
-- Fullscreen button
-- Export button
-- Options button
-
 [Preview (outdated)](https://github.com/Kaleb1583/editor/blob/main/previews/WithMonaco.png)
 ---
 
 # FileEditorBase
 
-just a textbox and output.
+(if monaco editor cannot be loaded or the user just wants the basic editor)
 
-### Buttons:
-- Fullscreen button
+a textbox input container and output container
+a full screen button
+
 
 [Preview](https://github.com/Kaleb1583/editor/blob/main/p/WithoutMonaco.png)
 ---
