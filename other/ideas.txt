@@ -19,8 +19,8 @@ IDEAS:
   have button in snippets menu to save, edit and import code V
   -
   snippet ideas:
-    upload/import snippet (html file) (any html file or one exported from the editor)
-    close snippet (btn shows if theres one open)
-    create snippet with code from main monaco editor
+    V upload/import snippet (html file) (any html file or one exported from the editor)
+    V close snippet (btn shows if theres one open)
+    X create snippet with code from main monaco editor
   ----------------
 
