@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-    
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,6 @@
 
     <!-- css stylesheets -->
     <link rel="stylesheet" href="./assets/css/styles.css"> <!-- main css for editor -->
-    <link rel="stylesheet" href="./assets/css/so.css"> <!-- christmas snow overlay -->
     <!-- end of css -->
 
     <noscript>
@@ -80,7 +79,6 @@
                     <p id="option3" onclick="toggleOption(3)" v="true" style="color: green">Show Export Button</p>
                     <p id="option7" onclick="toggleOption(7)" v="true" style="color: green">Show Snippets Button</p>
                     <p id="option8" onclick="toggleOption(8)" v="true" style="color: green">Show Share Button</p>
-                    <a id="noSnowA" style="color: red; text-decoration: none;" href="?doSnow=false">No Snow</a>
                     <!-- NEW-OPTION-CREATION -->
                     <br><br>
                     <button style="color: white" id="resetMonacoEditorValue" onclick="setMonacoEditorToDefault()">Reset Editor</button>
@@ -101,6 +99,8 @@
                 <div id="snippetButtonContainer">
                     <button id="editSnippetBtn" onclick="editSnippet();">Edit Snippet</button><button onclick="getSnippets();">Refresh</button><button onclick="createSnippet();">Create Snippet</button><br>
                     <button id="renameSnippetBtn" onclick="renameSnippet()">Rename Snippet</button> <button  id="closeSnippetBtn" onclick="closeSnippet();">Close Snippet</button><button onclick="uploadSnippet();">Upload Snippet</button>
+                    <br>
+                    <button style="color: red; background-color: black;"; onclick="deleteAllSnippets();">Delete All Snippets</button>
                 </div>
 
             </div>
@@ -639,7 +639,27 @@
         }
 
         function deleteAllSnippets() { // (besides example snippet)
-        
+
+            var confirmDelete = confirm("delete all snippets? you CANT undo this action!");
+
+            if(!(confirmDelete)) {
+                showAlert("canceled deletion of all snippets.", 4000, false);
+                return;
+            }
+
+            var snippets = localStorage.getItem("snippets");
+            var snippetsSplit = snippets.split(",");
+
+            for(i=0; i < snippetsSplit.length; i++) {
+                if(snippetsSplit[i] != "Example") {
+                    localStorage.removeItem(snippetsSplit[i]);
+                }
+            }
+
+            localStorage.setItem("snippets", "Example");
+            getSnippets();
+            showAlert("deleted all snippets.", 4000, false);
+
         }
 
         function editSnippet(name=null, noPrompt=null) {
@@ -1495,81 +1515,6 @@
             }
         }
         
-        // below snow overlay stuff below
-
-        try {
-            function doSnowCheck() {
-                var doSnow = params.get("doSnow");
-
-                if(doSnow == "false") {
-                    console.log("parameter doSnow is false so snow wont start.")
-                    document.getElementById("noSnowA").setAttribute("href", window.location.href.replace("?doSnow=false", ""));
-                    document.getElementById("noSnowA").setAttribute("style", "color: green; text-decoration: none;");
-                    document.getElementById("noSnowA").innerText = "No Snow";
-                } else {
-                    startSnowLoop();
-                }
-            }
-            doSnowCheck();
-
-            function startSnowLoop() {
-                console.log("loaded so");
-
-                var config = {
-                    numberOfSnowflakes: 50,
-                    interval: 900, // Interval between new snowflakes
-                    sizeMin: 2, // Minimum size of snowflakes
-                    sizeMax: 6, // Maximum size of snowflakes
-                    durationMin: 5, // Minimum animation duration in seconds
-                    durationMax: 8, // Maximum animation duration in seconds
-                    delayMax: 5, // Maximum animation delay in seconds
-                };
-
-                let interval;
-
-
-                function createSnowflake() {
-                    const snowflake = document.createElement('div');
-                    snowflake.classList.add('snowflake');
-                    document.body.appendChild(snowflake);
-
-                    const size = Math.random() * (config.sizeMax - config.sizeMin) + config.sizeMin; 
-                    const startLeft = Math.random() * 100;
-                    const animationDuration =
-                        Math.random() * (config.durationMax - config.durationMin) + config.durationMin; 
-                    const delay = Math.random() * config.delayMax; 
-
-                    snowflake.style.width = `${size}px`;
-                    snowflake.style.height = `${size}px`;
-                    snowflake.style.left = `${startLeft}vw`;
-                    snowflake.style.animationDuration = `${animationDuration}s`;
-                    snowflake.style.animationDelay = `${delay}s`;
-
-                    snowflake.addEventListener('animationend', () => {
-                        snowflake.remove();
-                    });
-                }
-
-                function createSnow() {
-                    for (let i = 0; i < config.numberOfSnowflakes; i++) {
-                        createSnowflake();
-                    }
-                }
-
-                const today = new Date();
-                const month = today.getMonth() + 1;
-
-                if (month === 12) {
-                    interval = setInterval(() => {
-                        createSnowflake();
-                    }, config.interval);
-                    createSnow();
-                }
-            }
-        } catch (err) {
-            console.log("Couldn't load christmas snow overlay!", err);
-        }
-
     </script>
 
 </body>
