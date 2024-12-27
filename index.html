@@ -47,7 +47,9 @@
     <div id="editor-container" class="editor-container">
 
         <header id="header" class="top-bar">
+            <span id="headerText" style="display: flex; gap: 6px; margin-left: 50%; margin-top: 4px;"></span>
             <div id="buttons">
+                <button style="color: green" id="shareBtn" onclick="openShareMenu()">Share</button>
                 <button style="color: red" id="snippetsBtn" onclick="openSnippets()">Snippets</button>
                 <button style="color: green" id="fullscreenBtn">Full Screen</button>
                 <button style="color: red" id="exportBtn" onclick="mkExport()">Export</button>
@@ -64,10 +66,11 @@
 
             <iframe id="output"></iframe>
 
-            <div id="options-container" style="width: 50%; height: 100%; margin-top: 48px; display: none;">
-
-                <div id="options">
-                    <h4><b>Options</b></h4>
+            <div id="options-container" style="height: 80%; width: 100%;  margin-top: 48px; display: none;">
+                
+                <b>Options</b>
+                
+                <div id="options" style="height: 100%; width: 100%; overflow: hidden; overflow-y: auto;">
                     <p id="option1" onclick="toggleOption(1)" v="true" style="color: green">Alerts/Popups</p>
                     <p id="option4" onclick="toggleOption(4)" v="true" style="color: green">Dark Mode</p>   
                     <p id="option5" onclick="toggleOption(5)" v="true" style="color: green">Show Line Numbers</p>
@@ -76,13 +79,12 @@
                     <p id="option2" onclick="toggleOption(2)" v="true" style="color: green">Show Fullscreen Button</p>
                     <p id="option3" onclick="toggleOption(3)" v="true" style="color: green">Show Export Button</p>
                     <p id="option7" onclick="toggleOption(7)" v="true" style="color: green">Show Snippets Button</p>
+                    <p id="option8" onclick="toggleOption(8)" v="true" style="color: green">Show Share Button</p>
                     <a id="noSnowA" style="color: red; text-decoration: none;" href="?doSnow=false">No Snow</a>
                     <!-- NEW-OPTION-CREATION -->
                     <br><br>
                     <button style="color: white" id="resetMonacoEditorValue" onclick="setMonacoEditorToDefault()">Reset Editor</button>
-                    <br><br>
                     <button style="color: white" onclick="switchToBaseEditor()">Switch To Basic Editor</button>
-                    <br><br>
                     <button style="color: white" onclick="resetOptions()">Reset Options</button>
                 </div>
 
@@ -104,6 +106,29 @@
             </div>
 
 
+            <div id="shareMenu" style="display: none;">
+
+                <h5>Share Code</h5>
+
+                    <div id="ShareCodeFromSnippet" style="display: none;">
+                        <h4>Choose A Snippet To Share:</h4>
+                        <div id="snippetToShareList"></div>
+                        <br>
+                        <p id="copiedLinkSnippet" style="display: none;"></p>
+                        <br><br>
+                        <button onclick="shareSnippetBack()">Back</button>
+                    </div>
+
+                    <div id="shareButtons" style="display: none;">
+                        <button onclick="shareCodeFromEditor()">Share code thats in editor</button>
+                        <button onclick="shareCodeFromSnippet()">Share code from a snippet</button>
+                        <div id="copiedLink" style="display: none"><br>you copied your share link!</div>
+                    </div>
+
+                </div>
+                                      
+            </div>
+
         </div>
     </div>
 
@@ -113,7 +138,7 @@
         const output = document.getElementById('output'); // iframe output
         const inputContainer = document.getElementById('input-container'); // input container with monaco-editor (50% left side)
         const outputContainer = document.getElementById('output-container'); // output container with output (50% right side)
-        const optionCount = 7; // [NEW-OPTION-CREATION] so for loops know how many times to loop (switched to loops instead of a bunch of if or switch case statements to keep this shorter in lines). 
+        const optionCount = 8; // [NEW-OPTION-CREATION] so for loops know how many times to loop (switched to loops instead of a bunch of if or switch case statements to keep this shorter in lines). 
         var doAlert = true; // do allow alerts, true by default  set to show alerts option value on load (toggleOption()).
         var isUsingMonacoEditor = false;   // prevents errors that can happen after switching to the basic editor caused by event listeners either attempting to interact with a deleted element or trying to update the output of the then deleted monaco editor.
         var isOriginalEditor = true; // if the original editor is deleted this is set to false.
@@ -124,8 +149,9 @@
         var ignoreReturn = false; // ignore isusingmonacoeditor false -> return for the no editor alert so if createEditorOnLoad is false it shows the no editor alert
         var canUseRequire = null;  // for loaading monaco
         var canUseMonaco = false; // for loading monaco
-        var isOptionsOpen = false;  // for preventing snippets from opening if options is open
-        var isSnippetsOpen = false;  // for preventing options from opening if snippets is open
+        var isOptionsOpen = false;  // if options is open dont allow snippets or share menu to open
+        var isSnippetsOpen = false;  // if snippets is open dont allow options or share menu to open
+        var isShareMenuOpen = false; // if share menu is open dont allow snippets or options to open
         var snippetMovedToEditor = null; // this is for storing what snippet was last loaded into the main editor from the snippet editor
         
         // ctrl+f "NEW-OPTION-CREATION" to find all things needed to be updated after creating a new option
@@ -202,7 +228,11 @@
             if(isOptionsOpen) {
                 showAlert("Close snippets first.", 4000, false)
                 return;
-                // alert user: setTimeout -> set red text? gray text? then nack to white
+            } 
+
+            if(isShareMenuOpen) {
+                showAlert("Close share menu first.", 4000, false)
+                return;
             } 
 
             document.getElementById("snippet-editor").innerHTML = "<br><h4>select or create a snippet and it will appear here!<h4>";
@@ -283,11 +313,10 @@
                         return;
                     }
 
-                    if(selectedSnippetValue == "") { // (!(selectedSnippetValue.includes("<html>")) && !(selectedSnippetValue.includes("</html>")))
+                    if(selectedSnippetValue == "") { 
                         console.log(`${escapeHtml(selectedSnippet)} is an empty snippet`)
                         var emptySnippetText = document.createElement("b");
                         emptySnippetText.innerHTML = `<span onclick='getASnippet("${escapeHtml(selectedSnippet)}")'>${escapeHtml(selectedSnippet)}.html (Empty)</span>&nbsp;&nbsp;|&nbsp;&nbsp;<span onclick='deleteASnippet("${escapeHtml(selectedSnippet)}")' style='color: red;'>[Delete]</span><br>`;
-                        //emptySnippetText.setAttribute("onclick",`getASnippet('${escapeHtml(selectedSnippet)}')`); 
                         elements.push(emptySnippetText);
                     } else {
                         console.log(`got snippet '${escapeHtml(selectedSnippet)}'.`)
@@ -613,13 +642,17 @@
         
         }
 
-        function editSnippet() {
+        function editSnippet(name=null, noPrompt=null) {
 
             var snippetNameSpan = document.getElementById("loadedSnippetName");
-
+  
             if(snippetNameSpan != null) {
+                if(name == null) {
+                    var snippetName = snippetNameSpan.innerText;
+                } else {
+                    var snippetName = name;
+                }
 
-                var snippetName = snippetNameSpan.innerText;
 
                 var snippetValue = localStorage.getItem(String(snippetName));
 
@@ -637,9 +670,11 @@
                     }
 
                     if(monacoEditor != null && snippetEditor != null) {
-                        var saveMainEditorsCode = confirm(`save code you had before opening snippets and before loading '${snippetName}'?`);
-                        if(saveMainEditorsCode) {
-                            createSnippet(monacoEditor.getValue());
+                        if(!(noPrompt)) {
+                            var saveMainEditorsCode = confirm(`save code you had before opening snippets and before loading '${snippetName}'?`);
+                            if(saveMainEditorsCode) {
+                                createSnippet(monacoEditor.getValue());
+                            }
                         }
                         localStorage.setItem("codeBeforeSnippetEdit", monacoEditor.getValue())
                         monacoEditor.setValue(String(snippetValue));
@@ -668,6 +703,171 @@
         }
 
         // ------------------ (end of snippet code)
+   
+
+        // Share / Receive Code Snippets
+            function openShareMenu() {
+                
+                if(isSnippetsOpen){showAlert("Close snippets first.", 4000, false);return;}
+                if(isOptionsOpen){showAlert("Close options first.", 4000, false);return;}
+
+                var shareMenu = document.getElementById("shareMenu");
+
+                if(shareMenu.style.display == "block") {
+                    isShareMenuOpen = false;
+                    console.log("hiding share menu")
+                    shareMenu.style.display = "none";
+                    document.getElementById("shareButtons").style.display = "none";
+                    output.hidden = false;
+                    document.getElementById("shareBtn").innerText = "Share";
+                } else {
+                    isShareMenuOpen = true;
+                    console.log("showing share menu")
+                    shareMenu.style.display = "block";
+                    document.getElementById("shareButtons").style.display = "block";
+                    output.hidden = true;
+                    document.getElementById("shareBtn").innerText = "Close Share Menu";
+                }
+
+            } 
+
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    console.log('share url copied to clipboard');
+                    showAlert("copied share link to clipboard", 3000, false);
+                }).catch(err => {
+                    console.error('Failed to copy text:', err);
+                });
+            }
+
+            function shareCodeFromEditor() {
+                var c = confirm("create snippet using code on the left?");
+                if(c) {
+                    var p = document.getElementById("copiedLink");
+                    p.style.display = "none";
+                    var snippetContent = monaco.editor.getEditors()[0].getValue(); 
+                    var encodedSnippet = encodeURIComponent(snippetContent); 
+                    var shareableLink = `${window.location.origin}${window.location.pathname}?snippet=${encodedSnippet}`;
+                    copyToClipboard(shareableLink);
+                    p.innerHTML = `<br> copied link. <br><br> <a href='' onclick='window.open("${shareableLink}")'>Open Link</a>`;
+                    p.style.display = "block";
+
+                }
+            }
+
+            function shareSnippetBack() {
+                document.getElementById("ShareCodeFromSnippet").style.display = "none";
+                document.getElementById("shareButtons").style.display = "block";
+            }
+
+            function doSnippetSharing(snippetName) {
+                console.log("snippet name: " + snippetName)
+                document.getElementById("copiedLinkSnippet").innerText = "";
+                document.getElementById("copiedLinkSnippet").style.display = "none";
+                var snippetValue = localStorage.getItem(snippetName);
+                //var snippetContent = monaco.editor.getEditors()[0].getValue(); 
+                if(snippetValue != null) {
+                    const encodedSnippet = encodeURIComponent(snippetValue); 
+                    const shareableLink = `${window.location.origin}${window.location.pathname}?snippet=${encodedSnippet}`;
+                    copyToClipboard(shareableLink);
+                    document.getElementById("copiedLinkSnippet").style.display = "block";                      // <a onclick='window.open("${snippetLink}")'>a element</a>
+                    document.getElementById("copiedLinkSnippet").innerHTML = `copied link for snippet: ${escapeHtml(snippetName)} <br><br> <a href="" onclick="window.open('${shareableLink}')">Open Link</a>`;
+                } else {
+                    console.log("snippet is null")
+                }
+            }
+
+            function shareCodeFromSnippet() {
+                // get snippets and let user choose one to share
+
+                document.getElementById("ShareCodeFromSnippet").style.display = "block";
+                document.getElementById("shareButtons").style.display = "none";
+
+                // pasted from getSnippets() and modified.
+                document.getElementById("snippetToShareList").innerHTML = "";
+
+                var snippets = localStorage.getItem("snippets");
+                var elements = [];
+
+                if(snippets != null) {
+
+                    if(snippets == "") {
+                        console.log("no snippets to get/load.")
+                        var ns = document.createElement("b");
+                        ns.innerText = "no snippets to load.";
+                        document.getElementById("snippetToShareList").append(ns);
+                        return;
+                    }
+
+                    var snippetsNameList = String(snippets).split(",");
+
+                    for(f=0; f < snippetsNameList.length; f++) {
+                        var selectedSnippet = snippetsNameList[f];
+
+                        var selectedSnippetValue = localStorage.getItem(String(selectedSnippet));
+
+                        if(selectedSnippetValue == null) {
+                            console.log(`snippet '${escapeHtml(selectedSnippet)}' at index: ${f} is null, deleted.`);
+                            var before = localStorage.getItem("snippets");
+                            if(before.includes("," + selectedSnippet)) {
+                                var after = before.replace(","+selectedSnippet, "");
+                                console.log(`removing ',${escapeHtml(selectedSnippet)}' from snippets.`)
+                                localStorage.setItem("snippets", after);
+                            } else if(before.includes(selectedSnippet)) {
+                                var after = before.replace(selectedSnippet, "");
+                                console.log(`removing '${escapeHtml(selectedSnippet)}' from snippets.`)
+                                localStorage.setItem("snippets", after);
+
+                            } else {
+                                console.log("snippet not found! snippet,snippet val,index", selectedSnippet, selctedSnippetValue, f)
+                            }
+                            document.getElementById("snippetToShareList").innerHTML = "";
+                            setTimeout(function(){shareCodeFromSnippet();}, 2000);
+                            return;
+                        }
+
+                        if(selectedSnippetValue == "") { // (!(selectedSnippetValue.includes("<html>")) && !(selectedSnippetValue.includes("</html>")))
+                            console.log(`${escapeHtml(selectedSnippet)} is an empty snippet`)
+                            var emptySnippetText = document.createElement("b");
+                            emptySnippetText.innerHTML = ``;
+                            elements.push(emptySnippetText);
+                        } else {
+                            console.log(`got snippet '${escapeHtml(selectedSnippet)}'.`)
+                            var snippetText = document.createElement("b");
+                            if(selectedSnippet == "Example") { 
+                                snippetText.innerHTML = `<span onclick='doSnippetSharing("Example")'>Example</span><br>`;
+                            } else {
+                                snippetText.innerHTML = `<span onclick='doSnippetSharing("${escapeHtml(selectedSnippet)}")'>${escapeHtml(selectedSnippet)}</span><br>`;
+                            }
+                            elements.push(snippetText);
+                        }
+
+                    }
+
+                    if(snippetsNameList.length > 0) { // if theres atleast 1 snippet
+                        var top = document.createElement("p");
+                        top.innerText = "------------------";
+                        document.getElementById("snippetToShareList").append(top);
+                        if(elements.length > 0) { // if theres snippets to load
+                            for(g=0; g < elements.length; g++) {
+                                document.getElementById("snippetToShareList").append(elements[g]);
+                            }
+                        }
+                        var bottom = document.createElement("p");
+                        bottom.innerText = "------------------";
+                        document.getElementById("snippetToShareList").append(bottom);
+                    }
+                
+                    showAlert("got snippets", 3500, false)
+                } else {
+                    console.log("snippets is null")
+                }
+
+
+                // ---------------------------
+            }
+
+        // ----------------------------- (end of share code)
 
         function setMonacoEditorToDefault() {
             
@@ -922,6 +1122,7 @@
                     "show line numbers": options.option5,
                     "auto save / load": options.option6,
                     "show snippets btn": options.option7,
+                    "show share menu btn: ": options.option8,
                     // NEW-OPTION-CREATION
 
                 };
@@ -943,7 +1144,7 @@
             }
             savedOptions.fontSize = localStorage.getItem("fontSize");
 
-            if (savedOptions.option1 && savedOptions.option2 && savedOptions.option3 && savedOptions.option4 && savedOptions.option5 && savedOptions.option6 && savedOptions.option7 && savedOptions.fontSize) { // NEW-OPTION-CREATION
+            if (savedOptions.option1 && savedOptions.option2 && savedOptions.option3 && savedOptions.option4 && savedOptions.option5 && savedOptions.option6 && savedOptions.option7 && savedOptions.option8 && savedOptions.fontSize) { // NEW-OPTION-CREATION
                 const message = isReset ? "reset options." : "options loaded";
                 showAlert(message, 3000, false);
             }
@@ -969,6 +1170,7 @@
         function toggleOptionMenu() {
             options = document.getElementById("options-container");
             if(isSnippetsOpen) {showAlert("Close snippets first.", 3000, false);return;}
+            if(isShareMenuOpen) {showAlert("Close share menu first.", 3000, false);return;}
             if(options.style.display == "block") {
                 // hide options
                 isOptionsOpen = false;
@@ -1057,6 +1259,12 @@
                 document.getElementById("snippetsBtn").hidden = true;
             }
 
+            if(document.getElementById("option8").getAttribute("v") == "true") {
+                document.getElementById("shareBtn").hidden = false;
+            } else if(document.getElementById("option8").getAttribute("v") == "") {
+                document.getElementById("shareBtn").hidden = true;
+            }
+
             // NEW-OPTION-CREATION
             // this is the code for options, it handles what to do for each option by checking if its true or false and then it toggles the option for example showing or hiding a button
         }
@@ -1064,10 +1272,6 @@
         // - Above: Options - Below: CodeSaverLoader -
         
         console.log("loaded CodeSaveLoader.")
-
-        if(scriptsLoaded != null) {
-            scriptsLoaded.push("CodeSaverLoader");
-        }
 
         function savePreviousFile() {
             try {
@@ -1095,7 +1299,30 @@
         function getPreviousFile() {
             try {
                 var pF = localStorage.getItem("lastFile");
+
                 if (pF != null && pF != "") {
+
+                    // ---- this is for detecting if the user's last code was a snippet and if so it will load the snippet so when saving it will update the snippet
+                    // (more shortly: if the code last saved is a snippet get the snippet so when the user saves it will update the snippet code)
+                    var snippetArr = localStorage.getItem("snippets").split(",");
+                    for(i=0; i < snippetArr.length; i++) {
+                        var selectedSnippetName = String(snippetArr[i]);
+                        if(selectedSnippetName == "Example") {continue;}
+                        if(pF = localStorage.getItem(selectedSnippetName)) {
+                            setTimeout(function() {
+                                monaco.editor.getEditors()[0]._domElement.style.display = "none";
+                                doAlert = false;
+                                console.log("Saver/Loader: previous code is a snippet with name: " + selectedSnippetName);  
+                                openSnippets();
+                                getASnippet(selectedSnippetName);
+                                doAlert = true;
+                                editSnippet(selectedSnippetName, true);
+                                monaco.editor.getEditors()[0]._domElement.style.display = "block";
+                            }, 3000);
+                            break;
+                        }
+                    }
+
                     setTimeout(function() {
                         if (editor != null) {
                             pF = pF.replace(/\u00A0/g, ' ');
@@ -1113,11 +1340,6 @@
         // - Above: CodeSaverLoader - Below: Export -
 
         console.log("loaded export.")
-
-        if(scriptsLoaded != null) {
-            scriptsLoaded.push("Export")
-        }
-
 
         const save = (data, filename) => {
             const blob = new Blob([data], { type: "text/html" });
@@ -1157,7 +1379,7 @@
 
                 // --- event listeners ---
 
-                document.addEventListener("keydown", function (event) {
+                document.addEventListener("keydown", function (event) { // ctrl
                     try{
                         if(!(isUsingMonacoEditor)) {return;} 
                         if ((event.ctrlKey || event.metaKey) && event.key === "s") {
@@ -1175,6 +1397,14 @@
                     try {
                         if(!(isUsingMonacoEditor)) {return;} 
                         if (event.key == "Escape") {
+                            if(isSnippetsOpen) {
+                                openSnippets();
+                                return;
+                            } 
+                            if(isShareMenuOpen) {
+                                openShareMenu();
+                                return;
+                            }
                             event.preventDefault();
                             toggleOptionMenu();
                         }
@@ -1183,19 +1413,6 @@
                     }
                 });
 
-                setTimeout(function() {
-                    try {
-                        if(!(isUsingMonacoEditor)) {return;}
-                        document.getElementById("output").contentWindow.document.body.addEventListener("keydown", function (event) {
-                            if (event.key == "Escape") {
-                                toggleOptionMenu();
-                            }
-                        });
-                    } catch(err) {
-                        //console.log(err)
-                    }
-
-                }, 5000);
 
                 try {
                     const fullscreenBtn = document.getElementById('fullscreenBtn');
@@ -1225,6 +1442,18 @@
 
         //  -----------------------------------------------------------------
 
+        
+        function loadSnippetFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const snippet = urlParams.get('snippet');
+            if (snippet) {
+                getPreviousFileOnLoad = false;
+                const decodedSnippet = decodeURIComponent(snippet); 
+                monaco.editor.getEditors()[0].setValue(decodedSnippet);
+                setTimeout(function() {showAlert("loaded shared code snippet", 3000, false);}, 2000);
+            }
+        }            
+
         setTimeout(function() {
             try {
                 if(monaco && monaco.editor != null) {
@@ -1240,8 +1469,19 @@
         }, 3000);
 
         
+        setTimeout(function() {
+            try {
+                if(monaco && monaco.editor != null) {
+                    loadSnippetFromURL();
+                }  
+            } catch(err) {
+                console.log(err)
+            }
+        }, 1000);
+
         if(getPreviousFileOnLoad) {
             try {
+                console.log("get previous file on load")
                 getPreviousFile();
                 setTimeout(function() {
                 
