@@ -19,7 +19,7 @@ or:
 clone repo with cmd: git clone https://github.com/kaleb1583/editor
 (or download the [zip](https://github.com/Kaleb1583/editor/archive/refs/heads/main.zip) and then extract it to a folder then open index.html)
 
-###What you need:
+### What you need:
   - index.html (monaco editor)
   - HTMLEditor.html (basic editor)
   - /assets/ (monaco editor code)
