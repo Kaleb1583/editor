@@ -669,51 +669,6 @@
 
         // ------------------ (end of snippet code)
 
-        // Share / Receive Code Snippets
-            function openShareMenu() {
-                
-                if(isSnippetsOpen){showAlert("Close snippets first.", 4000, false);return;}
-                if(isOptionsOpen){showAlert("Close options first.", 4000, false);return;}
-
-                var shareMenu = document.getElementById("shareMenu");
-
-                if(shareMenu.style.display == "block") {
-                    shareMenu.style.display = "none";
-                    document.getElementById("shareBtn").innerText = "Share";
-                } else {
-                    shareMenu.style.display = "block";
-                    document.getElementById("shareBtn").innerText = "Close Share Menu";
-                }
-
-            } 
-
-            
-            function shareSnippet() {
-                const snippetContent = monaco.editor.getEditors()[0].getValue(); 
-                const encodedSnippet = encodeURIComponent(snippetContent); 
-                const shareableLink = `${window.location.origin}${window.location.pathname}?snippet=${encodedSnippet}`;
-
-                navigator.clipboard.writeText(shareableLink).then(() => {
-                    alert('Link copied to clipboard!');
-                }).catch(err => {
-                    console.error('Failed to copy link:', err);
-                });
-            }
-
-            function loadSnippetFromURL() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const snippet = urlParams.get('snippet');
-                if (snippet) {
-                    const decodedSnippet = decodeURIComponent(snippet); 
-                    monaco.editor.getEditors()[0].setValue(decodedSnippet);
-                }
-            }
-            
-            document.getElementById('shareBtn').addEventListener('click', openShareMenu);
-            setInterval(loadSnippetFromURL, 3000);
-
-        // ----------------------------- (end of share code)
-
         function setMonacoEditorToDefault() {
             
             try {   
