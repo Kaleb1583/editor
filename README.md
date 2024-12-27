@@ -25,8 +25,8 @@ clone repo with cmd: git clone https://github.com/kaleb1583/editor
   - /assets/ (monaco editor code)
 
 
-clone/download repo working status: working.
-github page woring status: working.
+locally running status: working.
+github page status: working.
 
 
 ### Options:
