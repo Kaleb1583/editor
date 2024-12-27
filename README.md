@@ -1,44 +1,41 @@
 # Monaco HTML Editor
+This is a HTML editor/playground that uses Monaco (Visual Studio editor)
 
-this is a html editor/playground thats uses monaco (visual studio editor)
+If you're on Windows:
+   I would suggest: Visual Studio Code desktop, VSCode.dev, or another editor
+   Or you can use this but this may not be as good as some alternatives
 
-if your on windows
-  i would something like: visual studio code desktop, vscode.dev, or another editor
-  or you can use this but this may not as good as some alternatives
+If you're on Chromium (intended OS):
+   You can use this if you want to code a website (since VSCode.dev has no output)
 
-if you on chromium (intended os)
-  you can use this if you want to code a website (since vscode.dev has no output)
-
-note: vscode.dev is the best vsc in the browser but is missing the feature to run code
+Note: VSCode.dev is the best VSC in the browser but is missing the feature to run code
 
 ### How to use:
- [kaleb1583.github.io/editor/](https://kaleb1583.github.io/editor/)
+[kaleb1583.github.io/editor/](https://kaleb1583.github.io/editor/)
 
 or:
+Clone repo with cmd:
 
-clone repo with cmd: git clone https://github.com/kaleb1583/editor
+<kbd>git clone https://github.com/kaleb1583/editor</kbd>
+
 (or download the [zip](https://github.com/Kaleb1583/editor/archive/refs/heads/main.zip) and then extract it to a folder then open index.html)
 
 ### What you need:
-  - index.html (monaco editor)
-  - HTMLEditor.html (basic editor)
-  - /assets/ (monaco editor code)
+- index.html (Monaco editor)
+- HTMLEditor.html (basic editor)
+- /assets/ (Monaco editor code)
 
-
-locally running status: working.
-github page status: working.
-
+Locally running status: working
+GitHub page status: working
 [Preview (outdated)](https://github.com/Kaleb1583/editor/blob/main/previews/WithMonaco.png)
+
 ---
 
 # FileEditorBase
+(if Monaco editor cannot be loaded or the user just wants the basic editor)
 
-(if monaco editor cannot be loaded or the user just wants the basic editor)
-
-a textbox input container and output container
-a full screen button
-
-
+A textbox input container and output container
+A full screen button
 [Preview](https://github.com/Kaleb1583/editor/blob/main/p/WithoutMonaco.png)
----
 
+---
