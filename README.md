@@ -24,6 +24,8 @@ Or download the [zip](https://github.com/Kaleb1583/editor/archive/refs/heads/mai
   - HTMLEditor.html (basic editor)
   - /assets/ (monaco editor code)
 
+note: share and export are similar but different features, share if for sharing code to others and export is downloading 
+
 [Monaco Editor Preview](https://github.com/Kaleb1583/editor/blob/main/previews/WithMonaco.png)
 ---
 
