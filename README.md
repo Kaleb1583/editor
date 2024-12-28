@@ -12,19 +12,9 @@ If you're on chromium (intended os):
 Note: vscode.dev is the best vsc in the browser but is missing the feature to run code
 
 ### How to use editor:
+
  [kaleb1583.github.io/editor/](https://kaleb1583.github.io/editor/)
 
-Or:
-
-Clone repo with cmd: <kbd>git clone https://github.com/kaleb1583/editor</kbd>
-Or download the [zip](https://github.com/Kaleb1583/editor/archive/refs/heads/main.zip) and then extract it to a folder and then open index.html)
-
-### What you need:
-  - index.html (monaco editor)
-  - HTMLEditor.html (basic editor)
-  - /assets/ (monaco editor code)
-
-Note: share and export are similar but different features, share if for sharing code to others and export is downloading 
 
 [Monaco Editor Preview](https://github.com/Kaleb1583/editor/blob/main/previews/WithMonaco.png)
 ---
