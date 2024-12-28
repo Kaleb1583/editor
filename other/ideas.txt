@@ -4,9 +4,11 @@ IDEAS:
   --- script(s) -> script loader ---
   Status: added.
   -
-  removed scripts in header
-  removed functions
-  change script loader from handling all scripts to just monaco
+
+  removed functions from index.html and put them into seperate files: loaderOptions.js,Export.js,EventListeners.js, & CodeSaverLoader.js
+  made script loader that loads loaderOptions.js,Export.js,EventListeners.js, & CodeSaverLoader.js
+  and then undid all of it ^ :| 
+  changed script loader from handling all scripts to just loading the monaco editor <script>
   moved Options,Export,EventListeners,CodeSaverLoader to index.html so you only need to get monaco
   ----------------------------------
 
