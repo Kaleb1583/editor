@@ -25,8 +25,6 @@ Or download the [zip](https://github.com/Kaleb1583/editor/archive/refs/heads/mai
   - /assets/ (monaco editor code)
 
 [Monaco Editor Preview](https://github.com/Kaleb1583/editor/blob/main/previews/WithMonaco.png)
-
-
 ---
 
 # FileEditorBase
