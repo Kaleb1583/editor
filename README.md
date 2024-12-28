@@ -24,12 +24,10 @@ Or download the [zip](https://github.com/Kaleb1583/editor/archive/refs/heads/mai
   - HTMLEditor.html (basic editor)
   - /assets/ (monaco editor code)
 
-[Monaco Editor](https://github.com/Kaleb1583/editor/blob/main/previews/WithMonaco.png)
+[Monaco Editor Preview](https://github.com/Kaleb1583/editor/blob/main/previews/WithMonaco.png)
+
 
 ---
-
-
-
 
 # FileEditorBase
 
