@@ -14,7 +14,14 @@ Note: vscode.dev is the best vsc in the browser but is missing the feature to ru
 ### How to use editor:
 
  [kaleb1583.github.io/editor/](https://kaleb1583.github.io/editor/)
+ 
+**```<dev>```**
 
+
+Currently: adding a feature & then I will find and fix any minor issues
+
+
+**```</dev>```**
 
 [Monaco Editor Preview](https://github.com/Kaleb1583/editor/blob/main/previews/WithMonaco.png)
 ---
