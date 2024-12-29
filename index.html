@@ -63,7 +63,7 @@
             <div id="snippet-editor" style="display: none; height: 100%;"></div>
         </div>
 
-        <div id="output-container" style="color: black; background-color:white; width: 50%;">
+        <div id="output-container" style="color: black; background-color:white; width: 50%; margin-top: 30px;">
 
             <iframe id="output"></iframe>
 
@@ -72,21 +72,27 @@
                 <b>Options</b>
                 
                 <div id="options" style="height: 100%; width: 100%; overflow: hidden; overflow-y: auto;">
+                    <!-- NEW-OPTION-CREATION -->
                     <p id="option1" onclick="toggleOption(1)" v="true" style="color: green">Alerts/Popups</p>
                     <p id="option4" onclick="toggleOption(4)" v="true" style="color: green">Dark Mode</p>   
                     <p id="option5" onclick="toggleOption(5)" v="true" style="color: green">Show Line Numbers</p>
                     <p id="option6" onclick="toggleOption(6)" v="true" style="color: green">Save & Auto Load Code</p>
-                    <button style="color: white" onclick="font(-1)" id="dec">-</button><span id="span"> Font: 14 </span><button id="inc" style="color: white" onclick="font(1)">+</button>
+                    <button style="color: white" onclick="font(-1)" id="dec">-</button><span id="span"> Font: 14 </span><button id="inc" style="color: white" onclick="font(1)">+</button><br><br>
+                    <button onclick="toggleButtonOptionsMenu()">Show/Hide Buttons</button>
+                    <br><br>
+                    <button style="color: white" id="resetMonacoEditorValue" onclick="setMonacoEditorToDefault()">Reset Editor</button>
+                    <button style="color: white" onclick="switchToBaseEditor()">Switch To Basic Editor</button>
+                    <button style="color: white" onclick="resetOptions()">Reset Options</button>
+                </div>
+
+                <div id="showHideButtonOptions" style="display: none; height: 100%; width: 100%; overflow: hidden; overflow-y: auto;">
+                    <p id="option10" onclick="toggleOption(10)" v="true" style="color: green">Show Options Button</p>
                     <p id="option2" onclick="toggleOption(2)" v="true" style="color: green">Show Fullscreen Button</p>
                     <p id="option3" onclick="toggleOption(3)" v="true" style="color: green">Show Export Button</p>
                     <p id="option7" onclick="toggleOption(7)" v="true" style="color: green">Show Snippets Button</p>
                     <p id="option8" onclick="toggleOption(8)" v="true" style="color: green">Show Share Button</p>
                     <p id="option9" onclick="toggleOption(9)" v="true" style="color: green">Show Collab Button</p>
-                    <!-- NEW-OPTION-CREATION -->
-                    <br><br>
-                    <button style="color: white" id="resetMonacoEditorValue" onclick="setMonacoEditorToDefault()">Reset Editor</button>
-                    <button style="color: white" onclick="switchToBaseEditor()">Switch To Basic Editor</button>
-                    <button style="color: white" onclick="resetOptions()">Reset Options</button>
+                    <button onclick="toggleButtonOptionsMenu()">Close Button Options</button>
                 </div>
 
             </div>
@@ -167,7 +173,7 @@
         const output = document.getElementById('output'); // iframe output
         const inputContainer = document.getElementById('input-container'); // input container with monaco-editor (50% left side)
         const outputContainer = document.getElementById('output-container'); // output container with output (50% right side)
-        const optionCount = 9; // [NEW-OPTION-CREATION] so for loops know how many times to loop (switched to loops instead of a bunch of if or switch case statements to keep this shorter in lines). 
+        const optionCount = 10; // [NEW-OPTION-CREATION] so for loops know how many times to loop (switched to loops instead of a bunch of if or switch case statements to keep this shorter in lines). 
         var doAlert = true; // do allow alerts, true by default  set to show alerts option value on load (toggleOption()).
         var isUsingMonacoEditor = false;   // prevents errors that can happen after switching to the basic editor caused by event listeners either attempting to interact with a deleted element or trying to update the output of the then deleted monaco editor.
         var isOriginalEditor = true; // if the original editor is deleted this is set to false.
@@ -187,8 +193,6 @@
         let socket = null;
         let currentSessionId = null;
         let debounceTimeout = null;
-
-        // ctrl+f "NEW-OPTION-CREATION" to find all things needed to be updated after creating a new option
 
         if(localStorage.getItem("snippets") == null) { // set snippets to example on first time visiting (or just if its null)
             var templateCode = '<!DOCTYPE html>\n<html>\n\n<head>\n    <title>Example</title>\n</head>\n\n<body>\n    <h1>Hello, World!</h1>\n    <p>Write some code!</p>\n</body>\n\n</html>';
@@ -1053,8 +1057,7 @@
                         }
 
                         if(socket != null) {
-                            var c = monaco.editor.getEditors()[0].getValue();
-                            socket.send(JSON.stringify({ type: 'update', code: c }));
+                            autoUpdate();
                         }
                     } else {
                         console.warn("Main: No code to update in iframe.");
@@ -1177,7 +1180,8 @@
                     "auto save / load": options.option6,
                     "show snippets btn": options.option7,
                     "show share menu btn: ": options.option8,
-                    "show collab menu btn" : options.option9
+                    "show collab menu btn" : options.option9,
+                    "show options menu btn": options.option10
                     // NEW-OPTION-CREATION
 
                 };
@@ -1199,7 +1203,7 @@
             }
             savedOptions.fontSize = localStorage.getItem("fontSize");
 
-            if (savedOptions.option1 && savedOptions.option2 && savedOptions.option3 && savedOptions.option4 && savedOptions.option5 && savedOptions.option6 && savedOptions.option7 && savedOptions.option8 && savedOptions.option9 && savedOptions.fontSize) { // NEW-OPTION-CREATION
+            if (savedOptions.option1 && savedOptions.option2 && savedOptions.option3 && savedOptions.option4 && savedOptions.option5 && savedOptions.option6 && savedOptions.option7 && savedOptions.option8 && savedOptions.option9 && savedOptions.option10 && savedOptions.fontSize) { // NEW-OPTION-CREATION
                 const message = isReset ? "reset options." : "options loaded";
                 showAlert(message, 3000, false);
             }
@@ -1229,6 +1233,9 @@
             if(isCollabMenuOpen) {showAlert("Close collab menu first.", 3000, false);return;}
             if(options.style.display == "block") {
                 // hide options
+                if(document.getElementById("showHideButtonOptions").style.display == "block") {
+                    toggleButtonOptionsMenu(); // if options are closed and if the button options is open then close the button options and then the options.
+                }
                 isOptionsOpen = false;
                 options.style.display = "none";
                 output.hidden = false;
@@ -1327,8 +1334,28 @@
                 document.getElementById("collabBtn").hidden = true;
             }
 
+            if(document.getElementById("option10").getAttribute("v") == "true") {
+                document.getElementById("optionsBtn").hidden = false;
+            } else if(document.getElementById("option10").getAttribute("v") == "") {
+                document.getElementById("optionsBtn").hidden = true;
+                showAlert("options hidden, use ESC.", 4500, false);
+            }
             // NEW-OPTION-CREATION
             // this is the code for options, it handles what to do for each option by checking if its true or false and then it toggles the option for example showing or hiding a button
+        }
+
+        // BOOKMARK 
+
+        function toggleButtonOptionsMenu() {
+            // topBarButtonsOptions options
+            var topBarButtonOptions = document.getElementById("showHideButtonOptions");
+            if(topBarButtonOptions.style.display == "block") {
+                topBarButtonOptions.style.display = "none";
+                document.getElementById("options").style.display = "block";
+            } else if(topBarButtonOptions.style.display == "none") {
+                topBarButtonOptions.style.display = "block";
+                document.getElementById("options").style.display = "none";
+            }
         }
 
         // - Above: Options - Below: CodeSaverLoader -
@@ -1539,10 +1566,10 @@
                     if(!(conf)) {return;}
                     
                     socket.close();
-                    document.getElementById("id").innerText = "None."; 
-                    document.getElementById("collabMessage").style.display = "block";
+                    document.getElementById("id").innerText = ""; 
+                    document.getElementById("collabMessage").style.display = "none";
 
-                    var conf2 = confirm("save code from session? session will be deleted automatically.");
+                    var conf2 = confirm("save code from session? (session will be deleted automatically)");
                     if(conf2) {
                         var snna = prompt("save code as snippet:"); // SNippet NAme
                         if(snna != null && snna != "") {
@@ -1556,7 +1583,7 @@
         // Function to connect to the WebSocket server
         function connect() {
             try {
-                socket = new WebSocket('wss://imported-brainy-cream.glitch.me');
+                socket = new WebSocket('wss://MonacoEditor.glitch.me');
 
                 socket.addEventListener('open', () => {
                     console.log('Connected to WebSocket server');
@@ -1588,7 +1615,7 @@
                         if (currentCode !== data.code) {
                             editor.setValue(data.code);
                             updateOutput(false, false);
-                        }
+                        } 
                     }
 
                     if (data.type === 'notification') {
@@ -1612,11 +1639,7 @@
 
                 socket.addEventListener('close', () => {
                     console.log('WebSocket connection closed');
-                    document.getElementById('status').innerText = 'Server Offline!';
-                    document.getElementById('status').style.color = 'red';
-                    setTimeout(() => {
-                        document.getElementById('status').innerText = 'Disconnected';
-                    }, 5000);
+                    document.getElementById('status').innerText = 'Disconnected';
                 });
 
             } catch (err) {
@@ -1646,8 +1669,8 @@
 
         document.getElementById('createSessionBtn').addEventListener('click', () => {
             if(document.getElementById('createSessionBtn').disabled) {
-            document.getElementById('createSessionBtn').style.color = "red";
-            setTimeout(function() {document.getElementById('createSessionBtn').style.color = "white";}, 2000)
+                document.getElementById('createSessionBtn').style.color = "red";
+                setTimeout(function() {document.getElementById('createSessionBtn').style.color = "white";}, 2000)
             }
             createSession();
         });
@@ -1659,15 +1682,6 @@
         document.getElementById('connectBtn').addEventListener('click', () => {
             connect();
         });
-
-        /*
-        socket.onclose = function() {
-            closeWebSocket();
-        }
-        window.onbeforeunload = function() {
-            closeWebSocket();
-        };
-        */
 
         function handleButtons() { // shows or hides buttons based on if theres a session or if you're connected to the server
             var isThereASession = document.getElementById("id").innerText != "";
@@ -1695,7 +1709,9 @@
         function autoUpdate() {
             if(socket != null) {
                 var c = monaco.editor.getEditors()[0].getValue();
-                socket.send(JSON.stringify({ type: 'update', code: c }));
+                if(!(socket.readyState == WebSocket.CONNECTING) && !(socket.readyState == WebSocket.CLOSING) && !(socket.readyState == WebSocket.CLOSED)) {
+                    socket.send(JSON.stringify({ type: 'update', code: c }));
+                }
             }
         }
 
@@ -1705,25 +1721,17 @@
 
         setInterval(function() {
             if(document.getElementById("id") != null) {
-                if(document.getElementById("id").innerText != "None.") {    
+                if(document.getElementById("id").innerText != "") {    
                     autoUpdate();
                 }
             }
         }, 500)
         // ----------------------------------------------------------------------------------------------------
+        // ^ end of collab stuff functions code things
 
 
-        function loadSnippetFromURL() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const snippet = urlParams.get('snippet');
-            if (snippet) {
-                getPreviousFileOnLoad = false;
-                const decodedSnippet = decodeURIComponent(snippet); 
-                monaco.editor.getEditors()[0].setValue(decodedSnippet);
-                setTimeout(function() {showAlert("loaded shared code snippet", 3000, false);}, 2000);
-            }
-        }            
 
+        // event listeners, setTimeouts, setIntervals...
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Insert') {
                 var input = prompt("code to eval?");
@@ -1778,7 +1786,9 @@
             } catch(err) {
                 //console.log(err)
             }
-        }
+        } 
+        
+        // ---------------------------------------------
         
     </script>
 
