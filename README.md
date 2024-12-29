@@ -18,11 +18,11 @@ Note: vscode.dev is the best vsc in the browser but is missing the feature to ru
 **```<dev>```**
 
 Previously: 
-  added collab
+  added collab menu
 
-Currently: 
-  then I will find and fix any minor issues
-  then i may leave the editor as is
+Currently:
+  editor is basically done, i dont plan on updating any further.
+
 
 
 **```</dev>```**
