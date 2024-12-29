@@ -81,7 +81,7 @@
                     <p id="option3" onclick="toggleOption(3)" v="true" style="color: green">Show Export Button</p>
                     <p id="option7" onclick="toggleOption(7)" v="true" style="color: green">Show Snippets Button</p>
                     <p id="option8" onclick="toggleOption(8)" v="true" style="color: green">Show Share Button</p>
-                    <p>option9 Show Collab Button</p>
+                    <p id="option9" onclick="toggleOption(9)" v="true" style="color: green">Show Collab Button</p>
                     <!-- NEW-OPTION-CREATION -->
                     <br><br>
                     <button style="color: white" id="resetMonacoEditorValue" onclick="setMonacoEditorToDefault()">Reset Editor</button>
@@ -138,11 +138,13 @@
             </div>
 
             <div id="collabMenu" style="display: none; height: 80%; width: 50%;  margin-top: 38px; display: none;">
-                <span id="status" style="color: red">Disconnected</span>
+                <br><br>
+                <span>Status: </span><span id="status" style="color: red">Disconnected</span>
                 <div id="collabButtons">
+                    <br>
                     <button style="color: black; background-color: lightgrey;" id="connectBtn">Connect To Server</button>
                     <br><br>
-                    <span>Session: </span><span id="id" onclick="navigator.clipboard.writeText(String(this.innerText));showAlert('copied.', 4000, false)">None.</span>
+                    <span>Session ID: </span><span id="id" onclick="navigator.clipboard.writeText(String(this.innerText));showAlert('copied.', 4000, false)"></span>
                     <br><br>
                     <button id="createSessionBtn">Create Collab Session</button>
                     <button id="joinSessionBtn">Join Collab Session</button>
@@ -151,6 +153,8 @@
                     <button onclick="closeWebSocket()" id="closeWebSocketBtn">Close Collab</button>
                     <br><br>
                     <b>may be buggy or run into errors!</b>
+                    <br>
+                    <b>you may need to click connect multiple times to wake up the server.</b>
                 </div>
             </div>
 
@@ -163,7 +167,7 @@
         const output = document.getElementById('output'); // iframe output
         const inputContainer = document.getElementById('input-container'); // input container with monaco-editor (50% left side)
         const outputContainer = document.getElementById('output-container'); // output container with output (50% right side)
-        const optionCount = 8; // [NEW-OPTION-CREATION] so for loops know how many times to loop (switched to loops instead of a bunch of if or switch case statements to keep this shorter in lines). 
+        const optionCount = 9; // [NEW-OPTION-CREATION] so for loops know how many times to loop (switched to loops instead of a bunch of if or switch case statements to keep this shorter in lines). 
         var doAlert = true; // do allow alerts, true by default  set to show alerts option value on load (toggleOption()).
         var isUsingMonacoEditor = false;   // prevents errors that can happen after switching to the basic editor caused by event listeners either attempting to interact with a deleted element or trying to update the output of the then deleted monaco editor.
         var isOriginalEditor = true; // if the original editor is deleted this is set to false.
@@ -1173,6 +1177,7 @@
                     "auto save / load": options.option6,
                     "show snippets btn": options.option7,
                     "show share menu btn: ": options.option8,
+                    "show collab menu btn" : options.option9
                     // NEW-OPTION-CREATION
 
                 };
@@ -1194,7 +1199,7 @@
             }
             savedOptions.fontSize = localStorage.getItem("fontSize");
 
-            if (savedOptions.option1 && savedOptions.option2 && savedOptions.option3 && savedOptions.option4 && savedOptions.option5 && savedOptions.option6 && savedOptions.option7 && savedOptions.option8 && savedOptions.fontSize) { // NEW-OPTION-CREATION
+            if (savedOptions.option1 && savedOptions.option2 && savedOptions.option3 && savedOptions.option4 && savedOptions.option5 && savedOptions.option6 && savedOptions.option7 && savedOptions.option8 && savedOptions.option9 && savedOptions.fontSize) { // NEW-OPTION-CREATION
                 const message = isReset ? "reset options." : "options loaded";
                 showAlert(message, 3000, false);
             }
@@ -1314,6 +1319,12 @@
                 document.getElementById("shareBtn").hidden = false;
             } else if(document.getElementById("option8").getAttribute("v") == "") {
                 document.getElementById("shareBtn").hidden = true;
+            }
+
+            if(document.getElementById("option9").getAttribute("v") == "true") {
+                document.getElementById("collabBtn").hidden = false;
+            } else if(document.getElementById("option9").getAttribute("v") == "") {
+                document.getElementById("collabBtn").hidden = true;
             }
 
             // NEW-OPTION-CREATION
@@ -1524,16 +1535,16 @@
         function closeWebSocket() {
             try {
                 if(socket) {
-                    var conf = confirm("close session?");
+                    var conf = confirm("close session?.");
                     if(!(conf)) {return;}
                     
                     socket.close();
                     document.getElementById("id").innerText = "None."; 
                     document.getElementById("collabMessage").style.display = "block";
 
-                    var conf2 = confirm("save code?");
+                    var conf2 = confirm("save code from session? session will be deleted automatically.");
                     if(conf2) {
-                        var snna = prompt("save code as snippet:");
+                        var snna = prompt("save code as snippet:"); // SNippet NAme
                         if(snna != null && snna != "") {
                             createSnippet(monaco.editor.getEditors()[0].getValue(), snna);
                         }
@@ -1659,7 +1670,7 @@
         */
 
         function handleButtons() { // shows or hides buttons based on if theres a session or if you're connected to the server
-            var isThereASession = document.getElementById("id").innerText != "None.";
+            var isThereASession = document.getElementById("id").innerText != "";
             if(isThereASession) {
                 document.getElementById("createSessionBtn").style.display = "none";
                 document.getElementById("joinSessionBtn").style.display = "none";
