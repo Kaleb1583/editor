@@ -17,8 +17,12 @@ Note: vscode.dev is the best vsc in the browser but is missing the feature to ru
  
 **```<dev>```**
 
+Previously: 
+  added collab
 
-Currently: adding a feature & then I will find and fix any minor issues
+Currently: 
+  then I will find and fix any minor issues
+  then i may leave the editor as is
 
 
 **```</dev>```**
