@@ -34,7 +34,8 @@
     </script>
 
     <!-- scripts -->
-        <script id="ScriptElement" src="./assets/monaco-editor/0.52.2/min/vs/loader.js"></script>
+        <script id="ScriptElement" src="./assets/monaco-editor/0.52.2/min/vs/loader.js"></script>   
+        <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
     <!-- end of scripts -->
 
 </head>
@@ -48,6 +49,7 @@
         <header id="header" class="top-bar">
             <span id="headerText" style="display: flex; gap: 6px; margin-left: 50%; margin-top: 4px;"></span>
             <div id="buttons">
+                <button style="color: red" id="collabBtn" onclick="openCollabMenu()">Collab</button>
                 <button style="color: green" id="shareBtn" onclick="openShareMenu()">Share</button>
                 <button style="color: red" id="snippetsBtn" onclick="openSnippets()">Snippets</button>
                 <button style="color: green" id="fullscreenBtn">Full Screen</button>
@@ -79,6 +81,7 @@
                     <p id="option3" onclick="toggleOption(3)" v="true" style="color: green">Show Export Button</p>
                     <p id="option7" onclick="toggleOption(7)" v="true" style="color: green">Show Snippets Button</p>
                     <p id="option8" onclick="toggleOption(8)" v="true" style="color: green">Show Share Button</p>
+                    <p>option9 Show Collab Button</p>
                     <!-- NEW-OPTION-CREATION -->
                     <br><br>
                     <button style="color: white" id="resetMonacoEditorValue" onclick="setMonacoEditorToDefault()">Reset Editor</button>
@@ -97,10 +100,15 @@
                 <br>
 
                 <div id="snippetButtonContainer">
-                    <button id="editSnippetBtn" onclick="editSnippet();">Edit Snippet</button><button onclick="getSnippets();">Refresh</button><button onclick="createSnippet();">Create Snippet</button><br>
-                    <button id="renameSnippetBtn" onclick="renameSnippet()">Rename Snippet</button> <button  id="closeSnippetBtn" onclick="closeSnippet();">Close Snippet</button><button onclick="uploadSnippet();">Upload Snippet</button>
+                    <button onclick="getSnippets();">Refresh</button>
+                    <br>-
+                    <button id="editSnippetBtn" onclick="editSnippet();">Edit Snippet</button><button onclick="createSnippet();">Create Snippet</button><br>
+                    <button id="renameSnippetBtn" onclick="renameSnippet()">Rename Snippet</button> <button  id="closeSnippetBtn" onclick="closeSnippet();">Close Snippet</button>
+                    <br><br>
+                    <button onclick="uploadSnippet();">Upload Snippet</button>
                     <br>
                     <button style="color: red; background-color: black;"; onclick="deleteAllSnippets();">Delete All Snippets</button>
+                    <br><br>
                 </div>
 
             </div>
@@ -129,6 +137,20 @@
                                       
             </div>
 
+            <div id="collabMenu" style="display: none; height: 80%; width: 50%;  margin-top: 38px; display: none;">
+                <span id="status" style="color: red">Disconnected</span>
+                <div id="collabButtons">
+                    <button style="color: black; background-color: lightgrey;" id="connectBtn">Connect To Server</button><br>
+                    <br>
+                    <span>Session: </span><span id="id" onclick="navigator.clipboard.writeText(String(this.innerText));showAlert('copied.', 4000, false)">None.</span>
+                    <br><br>
+                    <button id="createSessionBtn">Create Collab Session</button>
+                    <button id="joinSessionBtn">Join Collab Session</button>
+                    <span id="collabMessage" style="display: none;">connected and live updating.<br></span>
+                    <button onclick="closeWebSocket()" id="closeWebSocketBtn">Close Collab</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -151,20 +173,24 @@
         var canUseMonaco = false; // for loading monaco
         var isOptionsOpen = false;  // if options is open dont allow snippets or share menu to open
         var isSnippetsOpen = false;  // if snippets is open dont allow options or share menu to open
-        var isShareMenuOpen = false; // if share menu is open dont allow snippets or options to open
+        var isShareMenuOpen = false; // if share menu is open dont allow snippets or options menu to open
+        var isCollabMenuOpen = false; // if collab menu is open dont allow snippets, options, or share menu to open
         var snippetMovedToEditor = null; // this is for storing what snippet was last loaded into the main editor from the snippet editor
-        
+        var detectIfPreviousFileIsASnippetAndLoadSnippet = false;
+        let socket = null;
+        let currentSessionId = null;
+        let debounceTimeout = null;
+
         // ctrl+f "NEW-OPTION-CREATION" to find all things needed to be updated after creating a new option
 
-        if(localStorage.getItem("snippets") == null) {
+        if(localStorage.getItem("snippets") == null) { // set snippets to example on first time visiting (or just if its null)
             var templateCode = '<!DOCTYPE html>\n<html>\n\n<head>\n    <title>Example</title>\n</head>\n\n<body>\n    <h1>Hello, World!</h1>\n    <p>Write some code!</p>\n</body>\n\n</html>';
             localStorage.setItem("snippets", "Example");
             localStorage.setItem("Example", templateCode);
         }
 
-
-        const url = new URL(window.location.href);
-        const params = new URLSearchParams(url.search);
+        //const url = new URL(window.location.href);
+        //const params = new URLSearchParams(url.search);
 
         try { // this is needed for monaco editor, it sets the vs path to the folder in Assets so it can be used as a variable when creating an editor
             require.config({
@@ -176,7 +202,7 @@
             console.log("Main: require err!"); 
         }
 
-        try {
+        try { // also for monaco editor, detects if monaco is loaded and can be used.
             require(['vs/editor/editor.main'], function () {
                 monaco;
             });
@@ -186,8 +212,8 @@
             console.log("cant use 'monaco;'")
         }
 
-        function scriptLoader() {
-            //console.log("Main: script loader runned")
+        function scriptLoader() { // loads monaco editor
+            console.log("Main: script loader runned")
             if(gotMonaco) {
                 doRun=true;
                 console.log("Main: monaco editor loaded successfully")
@@ -218,10 +244,9 @@
         scriptLoader();
 
         // -
-
-
+        
         // - snippets code -
-        function openSnippets() {
+        function openSnippets() { // open (toggle) snippets menu
 
             var snippetContainer = document.getElementById("snippets-container");
 
@@ -234,6 +259,11 @@
                 showAlert("Close share menu first.", 4000, false)
                 return;
             } 
+
+            if(isCollabMenuOpen) {
+                showAlert("Close collab menu first.", 4000, false)
+                return;
+            }
 
             document.getElementById("snippet-editor").innerHTML = "<br><h4>select or create a snippet and it will appear here!<h4>";
 
@@ -408,6 +438,21 @@
 
         setInterval(readOnlyLoop, 3000);
 
+        function dontHaveEmpty() {
+            try {
+                var editorCode = monaco.editor.getEditors()[0].getValue();
+                if(monaco.editor.getEditors()[0] != null) {
+                    if(editorCode == "") {
+                        monaco.editor.getEditors()[0].setValue("<html>\n\n</html>");
+                    }
+                }
+            } catch(err) {
+                err;
+            }
+        }
+
+        setInterval(dontHaveEmpty, 3000);
+
         function deleteASnippet(snippetName) {
 
             console.log("requested to delete snippet '" + snippetName + "'")
@@ -454,7 +499,7 @@
                 }
                 
                 var snippetName = document.getElementById("loadedSnippetName").innerText;
-                document.getElementById("snippet-editor").innerHTML = `<br><h4>closed snippet ${escapeHtml(snippetName)}<h4>`;
+                document.getElementById("snippet-editor").innerHTML = `<br><h4>closed snippet: ${escapeHtml(snippetName)}<h4>`;
                 setTimeout(function() {
                     document.getElementById("snippet-editor").innerHTML = "<br><h4>select or create a snippet and it will appear here!<h4>";
                 }, 2600);
@@ -602,15 +647,19 @@
         }
 
         setInterval(function() {
-            if(document.getElementById("loadedSnippetName") != null) {
-                document.getElementById("renameSnippetBtn").hidden = false;
-                if(document.getElementById("loadedSnippetName").innerText == "Example") {document.getElementById("renameSnippetBtn").hidden = true;}
-                document.getElementById("editSnippetBtn").hidden = false;  
-                document.getElementById("closeSnippetBtn").hidden = false;
-            } else {
-                document.getElementById("editSnippetBtn").hidden = true;    
-                document.getElementById("renameSnippetBtn").hidden = true;
-                document.getElementById("closeSnippetBtn").hidden = true;
+            try {
+                if(document.getElementById("loadedSnippetName") != null) {
+                    document.getElementById("renameSnippetBtn").hidden = false;
+                    if(document.getElementById("loadedSnippetName").innerText == "Example") {document.getElementById("renameSnippetBtn").hidden = true;}
+                    document.getElementById("editSnippetBtn").hidden = false;  
+                    document.getElementById("closeSnippetBtn").hidden = false;
+                } else {
+                    document.getElementById("editSnippetBtn").hidden = true;    
+                    document.getElementById("renameSnippetBtn").hidden = true;
+                    document.getElementById("closeSnippetBtn").hidden = true;
+                }
+            } catch(err) {
+
             }
         }, 0);
 
@@ -721,6 +770,7 @@
             }
 
         }
+
 
         // ------------------ (end of snippet code)
    
@@ -994,6 +1044,11 @@
                         if (showAlertOnUpdate) {
                             showAlert("updated output", 1000, false);
                         }
+
+                        if(socket != null) {
+                            var c = monaco.editor.getEditors()[0].getValue();
+                            socket.send(JSON.stringify({ type: 'update', code: c }));
+                        }
                     } else {
                         console.warn("Main: No code to update in iframe.");
                     }
@@ -1046,39 +1101,11 @@
         
         function switchToBaseEditor(delay=1000) {
 
-            if(document.getElementById("ScriptLoaderContainer") != null && document.getElementById("ScriptLoaderContainer") == "")
-
-            isUsingMonacoEditor = false;
-            isOriginalEditor = false;
-            setTimeout(function() {
-                
-                const result = window.confirm("do you want to switch to the basic editor?");
-    
-                if (result) {
-                    const container = document.getElementById("alert-container");
-                    container.style.zIndex = 11; // (+1 more than the header zIndex)
-                    const alertElement = document.createElement("div");
-                    alertElement.className = "alert-message";
-                    alertElement.textContent = "switching to basic editor";
-                    container.appendChild(alertElement);
-
-                    if(document.getElementById("editor-container") != null) {document.getElementById("editor-container").remove();}
-
-                    var baseEditorContainer = document.createElement("iframe");
-                    baseEditorContainer.id = "baseEditor";
-                    baseEditorContainer.srcdoc = "";
-                    //document.getElementById("alertInPage").style.display = "none";
-                    document.body.append(baseEditorContainer);
-                    document.title = "html editor";
-                    //document.getElementById("alertInPage").remove();
-                    document.getElementById("alert-container").remove();
-                    if(document.getElementsByClassName("monaco-aria-container")[0] != null) {
-                        document.getElementsByClassName("monaco-aria-container")[0].remove();
-                    }
-                } else {
-                    // canceled switch
-                }
-            }, delay);
+            if(window.location.hostname == "kaleb1583.github.io") {
+                window.location.href =  window.location.href + "/HTMLEditor.html";
+            } else {
+                window.location.href = String(window.location.href).replace("MonacoHTMLEditor.html", "HTMLEditor.html");
+            }
 
         } // switch editor
     
@@ -1191,6 +1218,7 @@
             options = document.getElementById("options-container");
             if(isSnippetsOpen) {showAlert("Close snippets first.", 3000, false);return;}
             if(isShareMenuOpen) {showAlert("Close share menu first.", 3000, false);return;}
+            if(isCollabMenuOpen) {showAlert("Close collab menu first.", 3000, false);return;}
             if(options.style.display == "block") {
                 // hide options
                 isOptionsOpen = false;
@@ -1322,24 +1350,26 @@
 
                 if (pF != null && pF != "") {
 
-                    // ---- this is for detecting if the user's last code was a snippet and if so it will load the snippet so when saving it will update the snippet
-                    // (more shortly: if the code last saved is a snippet get the snippet so when the user saves it will update the snippet code)
-                    var snippetArr = localStorage.getItem("snippets").split(",");
-                    for(i=0; i < snippetArr.length; i++) {
-                        var selectedSnippetName = String(snippetArr[i]);
-                        if(selectedSnippetName == "Example") {continue;}
-                        if(pF = localStorage.getItem(selectedSnippetName)) {
-                            setTimeout(function() {
-                                monaco.editor.getEditors()[0]._domElement.style.display = "none";
-                                doAlert = false;
-                                console.log("Saver/Loader: previous code is a snippet with name: " + selectedSnippetName);  
-                                openSnippets();
-                                getASnippet(selectedSnippetName);
-                                doAlert = true;
-                                editSnippet(selectedSnippetName, true);
-                                monaco.editor.getEditors()[0]._domElement.style.display = "block";
-                            }, 3000);
-                            break;
+                    if(detectIfPreviousFileIsASnippetAndLoadSnippet) {
+                        // ---- this is for detecting if the user's last code was a snippet and if so it will load the snippet so when saving it will update the snippet
+                        // (more shortly: if the code last saved is a snippet get the snippet so when the user saves it will update the snippet code)
+                        var snippetArr = localStorage.getItem("snippets").split(",");
+                        for(i=0; i < snippetArr.length; i++) {
+                            var selectedSnippetName = String(snippetArr[i]);
+                            if(selectedSnippetName == "Example") {continue;}
+                            if(pF = localStorage.getItem(selectedSnippetName)) {
+                                setTimeout(function() {
+                                    monaco.editor.getEditors()[0]._domElement.style.display = "none";
+                                    doAlert = false;
+                                    console.log("Saver/Loader: previous code is a snippet with name: " + selectedSnippetName);  
+                                    openSnippets();
+                                    getASnippet(selectedSnippetName);
+                                    doAlert = true;
+                                    editSnippet(selectedSnippetName, true);
+                                    monaco.editor.getEditors()[0]._domElement.style.display = "block";
+                                }, 3000);
+                                break;
+                            }
                         }
                     }
 
@@ -1462,7 +1492,213 @@
 
         //  -----------------------------------------------------------------
 
-        
+
+        // --- collab stuff code stuff things functions code things yeah collab stuff functions code things ---
+
+        function openCollabMenu() {
+            if(isOptionsOpen) {showAlert("Close options first.", 3000, false);return;}
+            if(isSnippetsOpen) {showAlert("Close snippets first.", 3000, false);return;}
+
+            var collabMenu = document.getElementById("collabMenu");
+
+            if(collabMenu.style.display == "block") {
+                isCollabMenuOpen = false;
+                console.log("hiding collab menu")
+                collabMenu.style.display = "none";
+                document.getElementById("collabButtons").style.display = "none";
+                document.getElementById("output-container").hidden = false;
+                document.getElementById("collabBtn").innerText = "Collab";
+            } else {
+                isCollabMenuOpen = true;
+                console.log("showing collab menu")
+                collabMenu.style.display = "block";
+                document.getElementById("collabButtons").style.display = "block";
+                document.getElementById("output-container").hidden = true;
+                document.getElementById("collabBtn").innerText = "Close Collab Menu";
+            }
+        }
+
+        function closeWebSocket() {
+            try {
+                if(socket) {
+                    var conf = confirm("close session?");
+                    if(!(conf)) {return;}
+                    
+                    socket.close();
+                    document.getElementById("id").innerText = "None."; 
+                    document.getElementById("collabMessage").style.display = "block";
+
+                    var conf2 = confirm("save code?");
+                    if(conf2) {
+                        var snna = prompt("save code as snippet:");
+                        if(snna != null && snna != "") {
+                            createSnippet(monaco.editor.getEditors()[0].getValue(), snna);
+                        }
+                    }
+                }
+            } catch(err) {err;}
+        }
+
+        // Function to connect to the WebSocket server
+        function connect() {
+            try {
+                socket = new WebSocket('wss://imported-brainy-cream.glitch.me');
+
+                socket.addEventListener('open', () => {
+                    console.log('Connected to WebSocket server');
+                    document.getElementById('status').innerText = 'Connected';
+                    document.getElementById('status').style.color = 'green';
+                });
+
+                socket.addEventListener('message', (event) => {
+                    const data = JSON.parse(event.data);
+
+                    if (data.type === 'created') {
+                        currentSessionId = data.sessionId;
+                        console.log(`Session created with ID: ${currentSessionId}`);
+                        document.getElementById('id').innerText = `${currentSessionId}`;
+                        updateIn = true;
+                    }
+
+                    if (data.type === 'joined') {
+                        //currentSessionId = data.sessionId; // Update the sessionId
+                        console.log('Joined session successfully!');
+                        document.getElementById('id').innerText = `${document.getElementById("joinSessionId").innerText}`;
+                        monaco.editor.getEditors()[0].setValue(data.code);
+                        updateOutput(false, false);
+                    }
+
+                    if (data.type === 'update') {
+                        const editor = monaco.editor.getEditors()[0];
+                        const currentCode = editor.getValue();
+                        if (currentCode !== data.code) {
+                            editor.setValue(data.code);
+                            updateOutput(false, false);
+                        }
+                    }
+
+                    if (data.type === 'notification') {
+                        showAlert(data.message, 4000, false);
+                    }
+
+                    if (data.type === 'error') {
+                        console.error(`Error: ${data.message}`);
+                    }
+                    
+                });
+
+                socket.addEventListener('error', (error) => {
+                    console.error('WebSocket error:', error);
+                    document.getElementById('status').innerText = 'Error';
+                    document.getElementById('status').style.color = 'red';
+                    setTimeout(() => {
+                        document.getElementById('status').innerText = 'Disconnected';
+                    }, 5000);
+                });
+
+                socket.addEventListener('close', () => {
+                    console.log('WebSocket connection closed');
+                    document.getElementById('status').innerText = 'Server Offline!';
+                    document.getElementById('status').style.color = 'red';
+                    setTimeout(() => {
+                        document.getElementById('status').innerText = 'Disconnected';
+                    }, 5000);
+                });
+
+            } catch (err) {
+                console.log("connect() error:", err);
+            }
+        }
+
+        function createSession() {
+            if (socket !== null) {
+                socket.send(JSON.stringify({ type: 'create' }));
+            }
+        }
+
+        function joinSession() {
+            if (socket !== null) {
+                const sessionId = prompt('Enter the session ID');
+                if (sessionId !== null && sessionId !== '') {
+                    var span = document.createElement("span");
+                    span.style.display = "none";
+                    span.id = "joinSessionId";
+                    span.innerText = sessionId;
+                    document.body.append(span);
+                    socket.send(JSON.stringify({ type: 'join', sessionId: sessionId }));
+                }
+            }
+        }
+
+        document.getElementById('createSessionBtn').addEventListener('click', () => {
+            if(document.getElementById('createSessionBtn').disabled) {
+            document.getElementById('createSessionBtn').style.color = "red";
+            setTimeout(function() {document.getElementById('createSessionBtn').style.color = "white";}, 2000)
+            }
+            createSession();
+        });
+
+        document.getElementById('joinSessionBtn').addEventListener('click', () => {
+            joinSession();
+        });
+
+        document.getElementById('connectBtn').addEventListener('click', () => {
+            connect();
+        });
+
+        /*
+        socket.onclose = function() {
+            closeWebSocket();
+        }
+        window.onbeforeunload = function() {
+            closeWebSocket();
+        };
+        */
+
+        function handleButtons() { // shows or hides buttons based on if theres a session or if you're connected to the server
+            var isThereASession = document.getElementById("id").innerText != "None.";
+            if(isThereASession) {
+                document.getElementById("createSessionBtn").style.display = "none";
+                document.getElementById("joinSessionBtn").style.display = "none";
+                document.getElementById("closeWebSocketBtn").style.display = "block";
+                document.getElementById("collabMessage").style.display = "block";
+            } else {
+                var sit = document.getElementById("status").innerText;
+                if(sit == "Disconnected" || sit == "Server Offline!" || sit == "Error") {     
+                    document.getElementById("connectBtn").style.display = "block";
+                    document.getElementById("createSessionBtn").style.display = "none";
+                    document.getElementById("joinSessionBtn").style.display = "none";
+                    document.getElementById("closeWebSocketBtn").style.display = "none";
+                } else {
+                    document.getElementById("connectBtn").style.display = "none";
+                    document.getElementById("createSessionBtn").style.display = "block";
+                    document.getElementById("joinSessionBtn").style.display = "block";
+                    document.getElementById("closeWebSocketBtn").style.display = "none";
+                }
+            }
+        }
+
+        function autoUpdate() {
+            if(socket != null) {
+                var c = monaco.editor.getEditors()[0].getValue();
+                socket.send(JSON.stringify({ type: 'update', code: c }));
+            }
+        }
+
+        setInterval(function() {
+            handleButtons();
+        }, 100);
+
+        setInterval(function() {
+            if(document.getElementById("id") != null) {
+                if(document.getElementById("id").innerText != "None.") {    
+                    autoUpdate();
+                }
+            }
+        }, 500)
+        // ----------------------------------------------------------------------------------------------------
+
+
         function loadSnippetFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
             const snippet = urlParams.get('snippet');
@@ -1473,6 +1709,21 @@
                 setTimeout(function() {showAlert("loaded shared code snippet", 3000, false);}, 2000);
             }
         }            
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Insert') {
+                var input = prompt("code to eval?");
+                if(input && input != "") {
+                    try {
+                        eval(input);
+                    } catch(err) {
+                        showAlert("error running code, check console.", 3000, false)
+                        console.log(err)
+                    }
+                }
+            }
+        });
+
 
         setTimeout(function() {
             try {
