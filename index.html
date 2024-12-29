@@ -1634,12 +1634,21 @@
                     document.getElementById('status').style.color = 'red';
                     setTimeout(() => {
                         document.getElementById('status').innerText = 'Disconnected';
+                        document.getElementById('status').style.color = "red";
+                        document.getElementById("collabMessage").style.display = "none";
+                        document.getElementById("id").innerText = "";
+                        document.getElementById("closeWebSocketBtn").style.display = "none";
+                        //document.
                     }, 5000);
                 });
 
                 socket.addEventListener('close', () => {
                     console.log('WebSocket connection closed');
                     document.getElementById('status').innerText = 'Disconnected';
+                    document.getElementById('status').style.color = "red";
+                    document.getElementById("collabMessage").style.display = "none";
+                    document.getElementById("id").innerText = "";
+                    document.getElementById("closeWebSocketBtn").style.display = "none";
                 });
 
             } catch (err) {
@@ -1662,7 +1671,10 @@
                     span.id = "joinSessionId";
                     span.innerText = sessionId;
                     document.body.append(span);
-                    socket.send(JSON.stringify({ type: 'join', sessionId: sessionId }));
+                    socket.send(
+                        JSON.stringify({ type: 'join', sessionId: sessionId }
+
+                    ));
                 }
             }
         }
