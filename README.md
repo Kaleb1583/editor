@@ -21,7 +21,8 @@ Previously:
   added collab menu
 
 Currently:
-  editor is basically done, i dont plan on updating any further.
+  problems to fix: remove or fix somebody joined (the session) message, i may go back after finishing other projects im working on
+  i thought "editor is basically done, i dont plan on updating any further." but theres still problems like the one above so i take this back
 
 
 
